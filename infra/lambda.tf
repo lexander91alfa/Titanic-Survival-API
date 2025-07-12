@@ -28,11 +28,3 @@ resource "aws_cloudwatch_log_group" "lambda_logs" {
   retention_in_days = 1
   tags = local.tags
 }
-
-# resource "aws_lambda_permission" "api_gateway_invoke" {
-#   statement_id  = "AllowExecutionFromAPIGateway"
-#   action        = "lambda:InvokeFunction"
-#   function_name = aws_lambda_function.prediction.function_name
-#   principal     = "apigateway.amazonaws.com"
-#   source_arn    = "${aws_api_gateway_rest_api.main.execution_arn}/*/*"
-# }

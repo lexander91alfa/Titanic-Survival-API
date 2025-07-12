@@ -17,6 +17,12 @@ locals {
         table_name    = "${local.project_name}-passengers"
     }
 
+    api_gateway = {
+        name = "${local.project_name}-api-gateway"
+        description = "API Gateway for Titanic Survival Prediction"
+        stage_name = "v1"
+    }
+
      tags = {
         Environment = local.environment
         Project     = local.project_name
