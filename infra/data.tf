@@ -1,6 +1,6 @@
 data "archive_file" "lambda_zip" {
   type        = "zip"
-  source_dir  = "../app"
+  source_dir  = "../api"
   output_path = ".terraform/lambda_function.zip"
   excludes    = [
     "*.pyc",
@@ -8,7 +8,11 @@ data "archive_file" "lambda_zip" {
     "*.txt",
     "tests",
     "tests/*",
-    "/models/treinamento.ipynb"
+    "models/treinamento.ipynb",
+    ".venv",
+    ".venv/*",
+    ".env",
+    ".env/*",
   ]
 }
 
