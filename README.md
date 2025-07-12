@@ -1,2 +1,2 @@
-# Titanic-Survival-API
+# API Para Previsão de Sobrevivência no Titanic
 
