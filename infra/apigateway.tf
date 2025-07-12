@@ -16,12 +16,16 @@ resource "aws_api_gateway_resource" "sobreviventes" {
   parent_id   = aws_api_gateway_rest_api.titanic_api.root_resource_id
   path_part   = "sobreviventes"
   rest_api_id = aws_api_gateway_rest_api.titanic_api.id
+
+  depends_on = [aws_api_gateway_rest_api.titanic_api]
 }
 
 resource "aws_api_gateway_resource" "sobrevivente_id" {
   parent_id   = aws_api_gateway_resource.sobreviventes.id
   path_part   = "{id}"
   rest_api_id = aws_api_gateway_rest_api.titanic_api.id
+
+  depends_on = [aws_api_gateway_resource.sobreviventes]
 }
 
 # ===================================================================
@@ -34,6 +38,7 @@ resource "aws_api_gateway_method" "post_sobreviventes" {
   http_method   = "POST"
   authorization = "NONE"
   api_key_required = true
+
 }
 
 resource "aws_api_gateway_integration" "post_sobreviventes_lambda" {
@@ -44,6 +49,8 @@ resource "aws_api_gateway_integration" "post_sobreviventes_lambda" {
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
   uri                     = aws_lambda_function.prediction.invoke_arn
+
+  depends_on = [aws_api_gateway_method.post_sobreviventes, aws_lambda_function.prediction]
 }
 
 resource "aws_api_gateway_method" "get_all_sobreviventes" {
@@ -52,6 +59,7 @@ resource "aws_api_gateway_method" "get_all_sobreviventes" {
   http_method    = "GET"
   authorization  = "NONE"
   api_key_required = true
+
 }
 
 resource "aws_api_gateway_integration" "get_all_sobreviventes_lambda" {
@@ -61,6 +69,8 @@ resource "aws_api_gateway_integration" "get_all_sobreviventes_lambda" {
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
   uri                     = aws_lambda_function.prediction.invoke_arn
+
+  depends_on = [aws_api_gateway_method.get_all_sobreviventes, aws_lambda_function.prediction]
 }
 
 resource "aws_api_gateway_method" "get_one_sobrevivente" {
@@ -69,6 +79,8 @@ resource "aws_api_gateway_method" "get_one_sobrevivente" {
   http_method    = "GET"
   authorization  = "NONE"
   api_key_required = true
+
+  depends_on = [aws_api_gateway_resource.sobrevivente_id]
 }
 
 resource "aws_api_gateway_integration" "get_one_sobrevivente_lambda" {
@@ -78,6 +90,8 @@ resource "aws_api_gateway_integration" "get_one_sobrevivente_lambda" {
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
   uri                     = aws_lambda_function.prediction.invoke_arn
+
+  depends_on = [aws_api_gateway_method.get_one_sobrevivente, aws_lambda_function.prediction]
 }
 
 resource "aws_api_gateway_method" "delete_sobrevivente" {
@@ -86,6 +100,8 @@ resource "aws_api_gateway_method" "delete_sobrevivente" {
   http_method    = "DELETE"
   authorization  = "NONE"
   api_key_required = true
+
+  depends_on = [aws_api_gateway_resource.sobrevivente_id]
 }
 
 resource "aws_api_gateway_integration" "delete_sobrevivente_lambda" {
@@ -95,8 +111,9 @@ resource "aws_api_gateway_integration" "delete_sobrevivente_lambda" {
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
   uri                     = aws_lambda_function.prediction.invoke_arn
-}
 
+  depends_on = [aws_api_gateway_method.delete_sobrevivente, aws_lambda_function.prediction]
+}
 
 # ===================================================================
 # 4. Deploy da API
@@ -124,6 +141,13 @@ resource "aws_api_gateway_deployment" "api_deployment" {
   lifecycle {
     create_before_destroy = true
   }
+
+  depends_on = [
+    aws_api_gateway_integration.post_sobreviventes_lambda,
+    aws_api_gateway_integration.get_all_sobreviventes_lambda,
+    aws_api_gateway_integration.get_one_sobrevivente_lambda,
+    aws_api_gateway_integration.delete_sobrevivente_lambda
+  ]
 }
 
 resource "aws_api_gateway_stage" "api_stage" {
@@ -148,8 +172,13 @@ resource "aws_api_gateway_stage" "api_stage" {
   }
 
   tags = local.tags
-}
 
+  depends_on = [
+    aws_api_gateway_deployment.api_deployment,
+    aws_cloudwatch_log_group.api_gateway_logs,
+    aws_api_gateway_account.api_gateway_account
+  ]
+}
 
 # ===================================================================
 # 5. Permissão para a Lambda
@@ -159,9 +188,8 @@ resource "aws_lambda_permission" "api_gateway_permission" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.prediction.function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn = "${aws_api_gateway_rest_api.titanic_api.execution_arn}/*/*"
+  source_arn    = "${aws_api_gateway_rest_api.titanic_api.execution_arn}/*/*"
 }
-
 
 # ===================================================================
 # 6. Segurança: API Key e Usage Plan (Throttling)
@@ -188,12 +216,16 @@ resource "aws_api_gateway_usage_plan" "case_usage_plan" {
     limit  = 100
     period = "DAY"
   }
+
+  depends_on = [aws_api_gateway_stage.api_stage]
 }
 
 resource "aws_api_gateway_usage_plan_key" "case_plan_key" {
   key_id        = aws_api_gateway_api_key.case_api_key.id
   key_type      = "API_KEY"
   usage_plan_id = aws_api_gateway_usage_plan.case_usage_plan.id
+
+  depends_on = [aws_api_gateway_api_key.case_api_key, aws_api_gateway_usage_plan.case_usage_plan]
 }
 
 # ===================================================================
@@ -205,4 +237,10 @@ resource "aws_cloudwatch_log_group" "api_gateway_logs" {
   retention_in_days = 1
 
   tags = local.tags
+}
+
+resource "aws_api_gateway_account" "api_gateway_account" {
+  cloudwatch_role_arn = aws_iam_role.api_gateway_cloudwatch_role.arn
+
+  depends_on = [aws_iam_role_policy_attachment.api_gateway_cloudwatch_attachment]
 }
