@@ -4,9 +4,6 @@
 resource "aws_api_gateway_rest_api" "titanic_api" {
   name        = local.api_gateway.name
   description = local.api_gateway.description
-  endpoint_configuration {
-    types = ["REGIONAL"]
-  }
 }
 
 # ===================================================================
