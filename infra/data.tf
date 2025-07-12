@@ -1,7 +1,7 @@
 data "archive_file" "lambda_zip" {
   type        = "zip"
-  source_dir  = "../app/lambda"
-  output_path = "${path.module}/lambda_function.zip"
+  source_dir  = "../app"
+  output_path = ".terraform/lambda_function.zip"
   excludes    = ["*.pyc", "__pycache__", "*.txt"]
 }
 

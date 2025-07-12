@@ -1,7 +1,7 @@
 locals {
     project_name = "titanic-survival-api"
     environment  = "production"
-    region       = "us-west-2"
+    region       = "us-east-1"
     account_id   = data.aws_caller_identity.current.account_id
 
     lambda = {
