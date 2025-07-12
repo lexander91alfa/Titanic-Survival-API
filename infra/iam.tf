@@ -104,6 +104,7 @@ resource "aws_iam_policy" "api_gateway_policy" {
   })
 
   tags = local.tags
+
 }
 
 resource "aws_iam_role_policy_attachment" "api_gateway_policy_attachment" {

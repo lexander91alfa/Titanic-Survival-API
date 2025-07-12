@@ -105,10 +105,20 @@ resource "aws_api_gateway_deployment" "api_deployment" {
   rest_api_id = aws_api_gateway_rest_api.titanic_api.id
 
   triggers = {
-    redeployment = sha1(jsonencode([
-      aws_api_gateway_resource.sobreviventes.id,
-      aws_api_gateway_method.post_sobreviventes.id,
-    ]))
+    redeployment = sha1(jsonencode(
+      [
+        aws_api_gateway_resource.sobreviventes.id,
+        aws_api_gateway_resource.sobrevivente_id.id,
+        aws_api_gateway_method.post_sobreviventes.id,
+        aws_api_gateway_method.get_all_sobreviventes.id,
+        aws_api_gateway_method.get_one_sobrevivente.id,
+        aws_api_gateway_method.delete_sobrevivente.id,
+        aws_api_gateway_integration.post_sobreviventes_lambda.id,
+        aws_api_gateway_integration.get_all_sobreviventes_lambda.id,
+        aws_api_gateway_integration.get_one_sobrevivente_lambda.id,
+        aws_api_gateway_integration.delete_sobrevivente_lambda.id,
+      ]
+    ))
   }
 
   lifecycle {
@@ -120,6 +130,24 @@ resource "aws_api_gateway_stage" "api_stage" {
   deployment_id = aws_api_gateway_deployment.api_deployment.id
   rest_api_id   = aws_api_gateway_rest_api.titanic_api.id
   stage_name    = local.api_gateway.stage_name
+
+  access_log_settings {
+    destination_arn = aws_cloudwatch_log_group.api_gateway_logs.arn
+    format = jsonencode({
+      requestId    = "$context.requestId"
+      ip           = "$context.identity.sourceIp"
+      caller       = "$context.identity.caller"
+      user         = "$context.identity.user"
+      requestTime  = "$context.requestTime"
+      httpMethod   = "$context.httpMethod"
+      resourcePath = "$context.resourcePath"
+      status       = "$context.status"
+      protocol     = "$context.protocol"
+      responseLength = "$context.responseLength"
+    })
+  }
+
+  tags = local.tags
 }
 
 
@@ -129,7 +157,7 @@ resource "aws_api_gateway_stage" "api_stage" {
 resource "aws_lambda_permission" "api_gateway_permission" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
-  function_name = local.lambda.function_name
+  function_name = aws_lambda_function.prediction.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn = "${aws_api_gateway_rest_api.titanic_api.execution_arn}/*/*"
 }
@@ -176,28 +204,5 @@ resource "aws_cloudwatch_log_group" "api_gateway_logs" {
   name              = "/aws/apigateway/${local.project_name}"
   retention_in_days = 1
 
-  tags = local.tags
-}
-
-resource "aws_api_gateway_stage" "titanic_api" {
-  deployment_id = aws_api_gateway_deployment.api_deployment.id
-  rest_api_id   = aws_api_gateway_rest_api.titanic_api.id
-  stage_name    = local.api_gateway.stage_name
-
-  access_log_settings {
-    destination_arn = aws_cloudwatch_log_group.api_gateway_logs.arn
-    format = jsonencode({
-      requestId    = "$context.requestId"
-      ip           = "$context.identity.sourceIp"
-      caller       = "$context.identity.caller"
-      user         = "$context.identity.user"
-      requestTime  = "$context.requestTime"
-      httpMethod   = "$context.httpMethod"
-      resourcePath = "$context.resourcePath"
-      status       = "$context.status"
-      protocol     = "$context.protocol"
-      responseLength = "$context.responseLength"
-    })
-  }
   tags = local.tags
 }
