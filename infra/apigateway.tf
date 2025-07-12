@@ -112,20 +112,6 @@ resource "aws_api_gateway_integration" "delete_sobrevivente_lambda" {
   depends_on = [aws_api_gateway_method.delete_sobrevivente, aws_lambda_function.prediction]
 }
 
-resource "aws_api_gateway_resource" "docs" {
-  parent_id   = aws_api_gateway_rest_api.titanic_api.root_resource_id
-  path_part   = "docs"
-  rest_api_id = aws_api_gateway_rest_api.titanic_api.id
-}
-
-resource "aws_api_gateway_method" "get_docs" {
-  rest_api_id      = aws_api_gateway_rest_api.titanic_api.id
-  resource_id      = aws_api_gateway_resource.docs.id
-  http_method      = "GET"
-  authorization    = "NONE"
-  api_key_required = true
-}
-
 # ===================================================================
 # 4. Deploy da API
 # ===================================================================
