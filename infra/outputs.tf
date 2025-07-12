@@ -3,12 +3,6 @@ output "api_base_url" {
   value       = aws_api_gateway_stage.api_stage.invoke_url
 }
 
-output "api_key_value" {
-  description = "Valor da chave de API (Mantenha em segredo!)"
-  value       = aws_api_gateway_api_key.case_api_key.value
-  sensitive   = true
-}
-
 output "dynamodb_table_name" {
   description = "Name of the DynamoDB table"
   value       = aws_dynamodb_table.passengers.name

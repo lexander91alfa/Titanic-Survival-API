@@ -1,0 +1,117 @@
+openapi: 3.1.0
+info:
+  title: API de Predição de Sobrevivência - Titanic
+  description: |-
+    API para submeter características de um passageiro do Titanic e receber a probabilidade de sobrevivência.
+  version: 1.0.0
+servers:
+  - url: /v1
+security:
+  - ApiKeyAuth: []
+
+paths:
+  /sobreviventes:
+    post:
+      summary: Cria uma nova predição para um passageiro
+      description: Submete os dados de um passageiro e retorna a probabilidade de sobrevivência e um ID único.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PassengerRequest'
+      responses:
+        '201':
+          description: Predição criada com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PassengerResponse'
+        '400':
+          description: Requisição inválida.
+    get:
+      summary: Lista todas as predições de passageiros
+      responses:
+        '200':
+          description: Lista de passageiros e suas probabilidades.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PassengerStored'
+
+  /sobreviventes/{id}:
+    parameters:
+      - name: id
+        in: path
+        description: ID do passageiro a ser consultado.
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Retorna a predição de um passageiro específico
+      responses:
+        '200':
+          description: Dados do passageiro.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PassengerStored'
+        '404':
+          description: Passageiro não encontrado.
+    delete:
+      summary: Deleta a predição de um passageiro
+      responses:
+        '200':
+          description: Passageiro deletado com sucesso.
+        '404':
+          description: Passageiro não encontrado.
+
+components:
+  schemas:
+    PassengerRequest:
+      type: object
+      properties:
+        Pclass:
+          type: integer
+          example: 3
+        Sex:
+          type: string
+          example: "male"
+        Age:
+          type: number
+          example: 22
+        SibSp:
+          type: integer
+          example: 1
+        Parch:
+          type: integer
+          example: 0
+        Fare:
+          type: number
+          example: 7.25
+    PassengerResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        probability:
+          type: number
+          format: float
+    PassengerStored:
+      type: object
+      properties:
+        id:
+          type: string
+        probability:
+          type: string
+        input_data:
+          $ref: '#/components/schemas/PassengerRequest'
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
