@@ -25,7 +25,7 @@ class PredictionService:
         self.logger = get_logger()
         self.model = self._load_model(method)
 
-    def _load_model(self, method: str = "joblib"):
+    def _load_model(self, method: str = "joblib") -> Any:
         """
         Método privado para carregar o modelo a partir do arquivo .pkl.
         Levanta um erro se o modelo não puder ser encontrado ou carregado.
