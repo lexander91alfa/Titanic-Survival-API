@@ -4,6 +4,7 @@ from src.models.passeger_request import PassengerRequest
 from src.repository.passenger_repository import PassengerRepository
 from src.mapper.mapper import map_request_to_dynamodb_item
 from src.logging.custom_logging import get_logger
+from decimal import Decimal
 
 
 class PassengerController:
@@ -20,6 +21,11 @@ class PassengerController:
                 {**p, "survival_probability": self.prediction_service.predict(p)}
                 for p in passengers
             ]
+
+            for p in passengers_with_survival_probability:
+                for key, value in p.items():
+                    if isinstance(value, float):
+                        p[key] = Decimal(str(value))
 
             [self.passenger_repository.save(p) for p in passengers_with_survival_probability]
 
