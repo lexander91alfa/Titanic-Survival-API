@@ -10,10 +10,9 @@ resource "null_resource" "build_lambda_layer" {
 
 data "archive_file" "layer_zip" {
   type        = "zip"
-  source_dir  = "../.build/lambda_layer/python" 
+  source_dir  = "../.build/lambda_layer" 
   output_path = ".terraform/lambda_layer.zip"
-
-  depends_on = [null_resource.build_lambda_layer]
+  depends_on  = [null_resource.build_lambda_layer]
 }
 
 resource "aws_s3_object" "lambda_layer_zip" {
