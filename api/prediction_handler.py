@@ -8,20 +8,39 @@ prediction_service = PredictionService(model_name="model")
 
 def lambda_handler(event, _):
     """Função Lambda para lidar com requisições HTTP."""
-    http_handler = HTTPAdapter(event)
-    http_method = http_handler.method
+    try:
+        http_adapter = HTTPAdapter(event)
+        http_method = http_adapter.method
 
-    match http_method:
-        case "POST":
-            request_data = http_handler.body
-            passenger = [PassengerRequest(**data) for data in request_data]
-            prediction = [{ "survival_probability": prediction_service.predict(p) } for p in passenger]
-            return http_handler.build_response(
-                200, {"survival_probability": prediction}
-            )
+        match http_method:
+            case "POST":
+                request_data = http_adapter.body
+                passenger = [PassengerRequest(**data) for data in request_data]
+                prediction = [{ "survival_probability": prediction_service.predict(p) } for p in passenger]
+                return http_adapter.build_response(
+                    200, {"survival_probability": prediction}
+                )
 
-        case "GET":
-            pass
+            case "GET":
+                pass
+
+            case "DELETE":
+                pass
+
+            case _:
+                return http_adapter.build_response(
+                    405, {"error": "Método HTTP não permitido"}
+                )
+            
+    except ValueError as ve:
+        return http_adapter.build_response(
+            400, {"error": str(ve)}
+        )
+
+    except Exception as e:
+        return http_adapter.build_response(
+            500, {"error": str(e)}
+        )
 
 
 if __name__ == "__main__":
