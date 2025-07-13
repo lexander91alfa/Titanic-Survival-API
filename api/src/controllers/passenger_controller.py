@@ -21,9 +21,7 @@ class PassengerController:
                 for p in passengers
             ]
 
-            self.passenger_repository.save(
-                passengers_with_survival_probability
-            )
+            [self.passenger_repository.save(p) for p in passengers_with_survival_probability]
 
             return [
                 {
