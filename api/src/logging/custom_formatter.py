@@ -36,4 +36,4 @@ class CustomFormatter(Formatter):
                 ),
             }
 
-        return json.dumps(log_data, ensure_ascii=False, indent=4)
+        return json.dumps(log_data, ensure_ascii=False)

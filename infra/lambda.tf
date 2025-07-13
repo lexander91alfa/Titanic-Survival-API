@@ -13,7 +13,7 @@ resource "aws_lambda_function" "prediction" {
 
   environment {
     variables = {
-      DYNAMODB_TABLE = aws_dynamodb_table.passengers.name
+      DYNAMODB_TABLE_NAME = aws_dynamodb_table.passengers.name
     }
   }
 
