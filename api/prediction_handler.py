@@ -1,9 +1,11 @@
 from src.models.passeger_request import PassengerRequest
 from src.services.predict_service import PredictionService
+from src.logging.custom_logging import get_logger
 from src.adapter.http_adapter import HTTPAdapter
 
 
 prediction_service = PredictionService(model_name="model")
+logger = get_logger()
 
 
 def lambda_handler(event, _):
@@ -11,6 +13,8 @@ def lambda_handler(event, _):
     try:
         http_adapter = HTTPAdapter(event)
         http_method = http_adapter.method
+
+        logger.info(f"Requisição recebida: {http_method} {http_adapter.path}")
 
         match http_method:
             case "POST":
@@ -33,11 +37,13 @@ def lambda_handler(event, _):
                 )
             
     except ValueError as ve:
+        logger.error(f"Erro de validação: {str(ve)}")
         return http_adapter.build_response(
             400, {"error": str(ve)}
         )
 
     except Exception as e:
+        logger.error(f"Erro inesperado: {str(e)}")
         return http_adapter.build_response(
             500, {"error": str(e)}
         )
