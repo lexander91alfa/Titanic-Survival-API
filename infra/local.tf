@@ -10,6 +10,8 @@ locals {
         runtime      = "python3.12"
         handler      = "prediction_handler.lambda_handler"
         function_name = "${local.project_name}-prediction-function"
+        description = "Lambda function for Titanic survival prediction"
+        architectures = ["arm64"]
     }
 
     dynamodb = {

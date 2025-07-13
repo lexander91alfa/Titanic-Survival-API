@@ -5,8 +5,11 @@ resource "aws_lambda_function" "prediction" {
   handler         = local.lambda.handler
   source_code_hash = data.archive_file.lambda_zip.output_base64sha256
   runtime         = local.lambda.runtime
+  architectures   = local.lambda.architectures
+  description     = local.lambda.description
   timeout         = local.lambda.timeout
   memory_size     = local.lambda.memory_size
+  layers          = [aws_lambda_layer_version.python_dependencies_layer.arn]
 
   environment {
     variables = {
@@ -18,7 +21,8 @@ resource "aws_lambda_function" "prediction" {
 
   depends_on = [
     aws_cloudwatch_log_group.lambda_logs,
-    aws_iam_role_policy_attachment.lambda_policy_attachment
+    aws_iam_role_policy_attachment.lambda_policy_attachment,
+    aws_lambda_layer_version.python_dependencies_layer
   ]
 }
 
