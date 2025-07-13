@@ -21,7 +21,7 @@ resource "aws_s3_object" "lambda_layer_zip" {
   key    = "layers/${local.project_name}-dependencies-layer.zip"
   source = data.archive_file.layer_zip.output_path
   
-  etag = filemd5(data.archive_file.layer_zip.output_path)
+  etag = data.archive_file.layer_zip.output_md5
 
   depends_on = [data.archive_file.layer_zip]
 }
