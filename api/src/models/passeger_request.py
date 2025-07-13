@@ -16,12 +16,12 @@ class PassengerRequest(BaseModel):
         description="Sexo do passageiro. Deve ser 'male' ou 'female'.",
         example="male",
     )
-    Age: int = Field(
+    Age: float = Field(
         ...,
-        ge=0,
-        le=120,
+        ge=0.0,
+        le=120.0,
         description="Idade do passageiro em anos. Deve ser entre 0 e 120.",
-        example=22,
+        example=22.0,
     )
     SibSp: int = Field(
         ..., ge=0, description="Número de irmãos ou cônjuges a bordo.", example=1

@@ -1,4 +1,3 @@
-import json
 from src.models.passeger_request import PassengerRequest
 from src.services.predict_service import PredictionService
 from src.adapter.http_adapter import HTTPAdapter
@@ -15,8 +14,8 @@ def lambda_handler(event, _):
     match http_method:
         case "POST":
             request_data = http_handler.body
-            passenger = PassengerRequest(**request_data)
-            prediction = prediction_service.predict(passenger)
+            passenger = [PassengerRequest(**data) for data in request_data]
+            prediction = [{ "survival_probability": prediction_service.predict(p) } for p in passenger]
             return http_handler.build_response(
                 200, {"survival_probability": prediction}
             )
@@ -31,7 +30,7 @@ if __name__ == "__main__":
 
     test_event = [
         {
-            "body": '{"Pclass": 3, "Sex": "female", "Age": 26.0, "SibSp": 0, "Parch": 1, "Fare": 7.925}',
+            "body": '[{"Pclass": 3, "Sex": "female", "Age": 26.0, "SibSp": 0, "Parch": 1, "Fare": 7.925, "Embarked": "C"}, {"Pclass": 1, "Sex": "male", "Age": 22.0, "SibSp": 1, "Parch": 0, "Fare": 71.2833, "Embarked": "S"}]',
             "resource": "/sobreviventes",
             "path": "/sobreviventes",
             "httpMethod": "POST",

@@ -21,16 +21,6 @@ class PredictionService:
         """
         self.model_path = os.path.join("models", model_name)
         self.model = self._load_model(method)
-        self.feature_order = [
-            "Pclass",
-            "SibSp",
-            "Age",
-            "Parch",
-            "Fare",
-            "Sex_male",
-            "Embarked_Q",
-            "Embarked_S",
-        ]
 
     def _load_model(self, method: str = "joblib"):
         """
@@ -72,11 +62,27 @@ class PredictionService:
         """
         data = request_data.model_dump()
 
-        features_list = [
-            data.get(feature) for feature in self.feature_order
-        ]
+        age = data.get('Age') if data.get('Age') is not None else 0
+        fare = data.get('Fare') if data.get('Fare') is not None else 0
+        embarked = data.get('Embarked') if data.get('Embarked') is not None else 'S' 
 
-        return np.array(features_list).reshape(1, -1)
+        sex_male = 1 if data.get('Sex') == 'male' else 0
+        
+        embarked_q = 1 if embarked == 'Q' else 0
+        embarked_s = 1 if embarked == 'S' else 0
+
+        feature_vector = [
+            data.get('Pclass'),
+            age,
+            data.get('SibSp'),
+            data.get('Parch'),
+            fare,
+            sex_male,
+            embarked_q,
+            embarked_s
+        ]
+    
+        return np.array([feature_vector])
 
     def predict(self, request_data: PassengerRequest) -> float:
         """
