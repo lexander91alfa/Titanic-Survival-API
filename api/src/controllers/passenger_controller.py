@@ -32,7 +32,7 @@ class PassengerController:
             return [
                 {
                     "passenger_id": p.get("passenger_id", "unknown"),
-                    "survival_probability": p.get("survival_probability", 0.0),
+                    "survival_probability": round(float(p.get("survival_probability", 0.0)), 4),
                 }
                 for p in passengers_with_survival_probability
             ]
