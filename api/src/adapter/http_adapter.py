@@ -29,6 +29,11 @@ class HTTPAdapter:
         return self._event.get("pathParameters") or {}
 
     @property
+    def resource(self) -> Optional[str]:
+        """Retorna o recurso da requisição."""
+        return self._event.get("resource")
+
+    @property
     def body(self) -> Any:
         """
         Retorna o corpo (body) da requisição, já decodificado de JSON.

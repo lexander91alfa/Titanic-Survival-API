@@ -6,7 +6,7 @@ from os import path, makedirs
 from datetime import datetime
 
 
-def get_logger(type_logger='console', level=INFO) -> Logger:
+def get_logger(type_logger="console", level=INFO) -> Logger:
     """
     Cria um logger configurado com um manipulador de arquivo e um formatador customizado.
     O logger é configurado para registrar mensagens de nível INFO e superior.
