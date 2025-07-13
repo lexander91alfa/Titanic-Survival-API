@@ -42,32 +42,33 @@ def slim_package():
     Remove arquivos e pastas desnecessários para reduzir o tamanho do pacote.
     """
     print(">>> Otimizando o tamanho do pacote...", flush=True)
-    total_removed = 0
-
+    
+    # Padrões de arquivos e pastas a serem removidos.
+    # REMOVEMOS '**/tests' e '**/test' para evitar quebrar o numpy.
     patterns_to_remove = [
         "**/__pycache__",
         "**/*.pyc",
-        "**/*.dist-info",
-        "**/tests",
-        "**/test"
+        "**/*.dist-info"
     ]
 
+    print("--- Removendo arquivos de metadados e cache...", flush=True)
     for pattern in patterns_to_remove:
         for path in glob.glob(os.path.join(SITE_PACKAGES_DIR, pattern), recursive=True):
             if os.path.isdir(path):
                 shutil.rmtree(path)
             else:
                 os.remove(path)
-            total_removed += 1
     
-    strip_command = f"find {SITE_PACKAGES_DIR} -name '*.so' -exec strip {{}} \\;"
+    # Otimização de binários (.so) continua sendo uma boa prática e segura
+    print("--- Otimizando arquivos binários (.so)..." , flush=True)
+    strip_command = f"find {SITE_PACKAGES_DIR} -name '*.so' -exec strip {{}} \;"
     try:
         subprocess.run(strip_command, shell=True, check=True)
         print(">>> Arquivos binários (.so) otimizados.", flush=True)
     except (subprocess.CalledProcessError, FileNotFoundError):
-        print("--- Aviso: Comando 'strip' não encontrado. Pulando a otimização de binários. Isso é comum no Windows.", flush=True)
+        print("--- Aviso: Comando 'strip' não encontrado. Pulando a otimização de binários.")
 
-    print(f">>> Otimização concluída. {total_removed} arquivos/pastas desnecessários removidos.", flush=True)
+    print(">>> Otimização concluída.", flush=True)
 
 
 if __name__ == "__main__":
