@@ -43,8 +43,6 @@ def slim_package():
     """
     print(">>> Otimizando o tamanho do pacote...", flush=True)
     
-    # Padrões de arquivos e pastas a serem removidos.
-    # REMOVEMOS '**/tests' e '**/test' para evitar quebrar o numpy.
     patterns_to_remove = [
         "**/__pycache__",
         "**/*.pyc",
@@ -59,7 +57,6 @@ def slim_package():
             else:
                 os.remove(path)
     
-    # Otimização de binários (.so) continua sendo uma boa prática e segura
     print("--- Otimizando arquivos binários (.so)..." , flush=True)
     strip_command = f"find {SITE_PACKAGES_DIR} -name '*.so' -exec strip {{}} \;"
     try:
