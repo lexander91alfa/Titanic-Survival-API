@@ -69,7 +69,7 @@ def lambda_handler(event, _):
                     else:
                         passengers = passenger_controller.get_all_passengers()
 
-                    if passengers.get("items") is None:
+                    if passengers.get("items"):
                         return http_adapter.build_response(
                             404, {"error": "Nenhum passageiro encontrado"}
                         )
