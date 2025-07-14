@@ -1,6 +1,7 @@
 from typing import List
 from src.services.predict_service import PredictionService
 from src.models.passeger_request import PassengerRequest
+from src.models.prediction_response import PredictionResponse
 from src.repository.passenger_repository import PassengerRepository
 from src.mapper.mapper import map_request_to_dynamodb_item
 from src.logging.custom_logging import get_logger
@@ -17,28 +18,24 @@ class PassengerController:
         """Saves passenger data and returns survival probability and id."""
         try:
             result = []
-            
+
             for passenger_request in passengers_data:
-                # Map and predict one at a time to reduce memory usage
                 passenger = map_request_to_dynamodb_item(passenger_request)
                 survival_prob = self.prediction_service.predict(passenger)
-                
-                # Convert floats to Decimal in-place
+
                 for key, value in passenger.items():
                     if isinstance(value, float):
                         passenger[key] = Decimal(str(value))
-                
-                # Add survival probability as Decimal
+
                 passenger["survival_probability"] = Decimal(str(survival_prob))
-                
-                # Save immediately to reduce memory footprint
+
                 self.passenger_repository.save(passenger)
-                
-                # Build result with minimal data
-                result.append({
-                    "passenger_id": passenger.get("passenger_id", "unknown"),
-                    "survival_probability": round(float(survival_prob), 4),
-                })
+
+                response = PredictionResponse(
+                    id=passenger.get("passenger_id", "unknown"),
+                    probability=round(float(survival_prob), 4)
+                )
+                result.append(response)
 
             return result
 

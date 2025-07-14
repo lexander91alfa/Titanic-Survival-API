@@ -9,7 +9,8 @@ from src.repository.passenger_repository import PassengerRepository
 from src.services.predict_service import PredictionService
 from src.controllers.passenger_controller import PassengerController
 
-@fixture(scope="session", autouse=True)
+
+@fixture(scope="module", autouse=True)
 def aws_credentials():
     """Define credenciais AWS falsas para os testes."""
     os.environ["DYNAMODB_TABLE_NAME"] = "titanic-survival-api-passengers"
@@ -19,6 +20,7 @@ def aws_credentials():
     os.environ["AWS_REGION"] = "us-east-1"
     yield
 
+
 @fixture(scope="function")
 def dynamodb_table():
     """Cria uma tabela DynamoDB mockada para os testes."""
@@ -27,16 +29,20 @@ def dynamodb_table():
         table_name = "titanic-survival-api-passengers"
         dynamodb.create_table(
             TableName=table_name,
-            KeySchema=[{'AttributeName': 'passenger_id', 'KeyType': 'HASH'}],
-            AttributeDefinitions=[{'AttributeName': 'passenger_id', 'AttributeType': 'S'}],
-            ProvisionedThroughput={'ReadCapacityUnits': 1, 'WriteCapacityUnits': 1}
+            KeySchema=[{"AttributeName": "passenger_id", "KeyType": "HASH"}],
+            AttributeDefinitions=[
+                {"AttributeName": "passenger_id", "AttributeType": "S"}
+            ],
+            ProvisionedThroughput={"ReadCapacityUnits": 1, "WriteCapacityUnits": 1},
         )
         yield
+
 
 @fixture
 def passenger_repository(dynamodb_table):
     """Fixture para criar uma instância do repositório com a tabela mockada."""
     return PassengerRepository()
+
 
 @fixture
 def passenger_controller(passenger_repository):

@@ -8,9 +8,7 @@ class PassengerRequest(BaseModel):
     As regras são baseadas na análise do Titanic Dataset.
     """
 
-    PassengerId: str = Field(
-        ..., description="ID único do passageiro.", example="1"
-    )
+    PassengerId: str = Field(..., description="ID único do passageiro.", example="1")
     Pclass: int = Field(
         ..., description="Classe do ticket. Deve ser 1, 2 ou 3.", example=3
     )

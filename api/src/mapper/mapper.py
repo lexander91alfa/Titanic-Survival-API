@@ -7,11 +7,11 @@ def map_request_to_dynamodb_item(passenger_request: PassengerRequest) -> Dict[st
     """Maps a PassengerRequest to a DynamoDB item."""
     return {
         "passenger_id": str(passenger_request.PassengerId),
-        "pclass": passenger_request.Pclass,
-        "sex": passenger_request.Sex,
-        "age": passenger_request.Age,
-        "sibsp": passenger_request.SibSp,
-        "parch": passenger_request.Parch,
-        "fare": passenger_request.Fare,
-        "embarked": passenger_request.Embarked,
+        "Pclass": passenger_request.Pclass,
+        "Sex": passenger_request.Sex,
+        "Age": passenger_request.Age,
+        "SibSp": passenger_request.SibSp,
+        "Parch": passenger_request.Parch,
+        "Fare": passenger_request.Fare,
+        "Embarked": passenger_request.Embarked,
     }

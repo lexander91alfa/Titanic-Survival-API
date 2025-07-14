@@ -59,7 +59,9 @@ class PassengerRepository:
             self.table.delete_item(Key={"passenger_id": passenger_id})
             return True
         except boto3.exceptions.Boto3Error as e:
-            self.logger.error(f"Erro do boto3 ao deletar passageiro {passenger_id}: {e}")
+            self.logger.error(
+                f"Erro do boto3 ao deletar passageiro {passenger_id}: {e}"
+            )
             raise
         except Exception as e:
             self.logger.error(f"Erro geral ao deletar passageiro {passenger_id}: {e}")
