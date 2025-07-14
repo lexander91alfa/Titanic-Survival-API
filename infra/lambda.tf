@@ -17,6 +17,12 @@ resource "aws_lambda_function" "prediction" {
     }
   }
 
+  publish = true
+
+  snap_start {
+    apply_on = "PublishedVersions"
+  }
+
   tags = local.tags
 
   depends_on = [
@@ -24,6 +30,12 @@ resource "aws_lambda_function" "prediction" {
     aws_iam_role_policy_attachment.lambda_policy_attachment,
     aws_lambda_layer_version.python_dependencies_layer
   ]
+}
+
+resource "aws_lambda_alias" "example_alias" {
+  name             = "live"
+  function_name    = aws_lambda_function.prediction.function_name
+  function_version = aws_lambda_function.prediction.version
 }
 
 resource "aws_cloudwatch_log_group" "lambda_logs" {
