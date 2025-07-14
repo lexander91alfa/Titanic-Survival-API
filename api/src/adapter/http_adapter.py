@@ -34,6 +34,16 @@ class HTTPAdapter:
         return self._event.get("resource")
 
     @property
+    def headers(self) -> Dict[str, str]:
+        """Retorna os cabeçalhos da requisição."""
+        return self._event.get("headers") or {}
+
+    @property
+    def query_parameters(self) -> Dict[str, str]:
+        """Retorna os parâmetros de consulta (query) como um dicionário."""
+        return self._event.get("queryStringParameters") or {}
+
+    @property
     def body(self) -> Any:
         """
         Retorna o corpo (body) da requisição, já decodificado de JSON.
@@ -67,5 +77,9 @@ class HTTPAdapter:
                 "Content-Type": "application/json",
                 "Access-Control-Allow-Origin": "*",  # Boa prática para CORS
             },
-            "body": json.dumps(body_content, ensure_ascii=False) if body_content is not None else None,
+            "body": (
+                json.dumps(body_content, ensure_ascii=False)
+                if body_content is not None
+                else None
+            ),
         }

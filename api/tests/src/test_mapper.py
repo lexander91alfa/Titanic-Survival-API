@@ -16,7 +16,7 @@ class TestMapper:
             SibSp=1,
             Parch=2,
             Fare=100.50,
-            Embarked="S"
+            Embarked="S",
         )
 
         result = map_request_to_dynamodb_item(passenger_request)
@@ -43,7 +43,7 @@ class TestMapper:
             Age=30.0,
             SibSp=0,
             Parch=0,
-            Fare=15.25
+            Fare=15.25,
             # Embarked ausente
         )
 
@@ -65,14 +65,14 @@ class TestMapper:
     def test_map_passenger_id_conversion_to_string(self):
         """Testa se PassengerId é convertido para string."""
         passenger_request = PassengerRequest(
-            PassengerId='789',
+            PassengerId="789",
             Pclass=2,
             Sex="female",
             Age=35.5,
             SibSp=1,
             Parch=1,
             Fare=50.0,
-            Embarked="C"
+            Embarked="C",
         )
 
         result = map_request_to_dynamodb_item(passenger_request)
@@ -82,11 +82,7 @@ class TestMapper:
 
     def test_map_all_passenger_classes(self):
         """Testa mapeamento para todas as classes de passageiro."""
-        test_cases = [
-            (1, "first_class"),
-            (2, "second_class"), 
-            (3, "third_class")
-        ]
+        test_cases = [(1, "first_class"), (2, "second_class"), (3, "third_class")]
 
         for pclass, test_id in test_cases:
             passenger_request = PassengerRequest(
@@ -97,7 +93,7 @@ class TestMapper:
                 SibSp=0,
                 Parch=0,
                 Fare=50.0,
-                Embarked="S"
+                Embarked="S",
             )
 
             result = map_request_to_dynamodb_item(passenger_request)
@@ -105,10 +101,7 @@ class TestMapper:
 
     def test_map_all_sex_values(self):
         """Testa mapeamento para ambos os sexos."""
-        test_cases = [
-            ("male", "male_passenger"),
-            ("female", "female_passenger")
-        ]
+        test_cases = [("male", "male_passenger"), ("female", "female_passenger")]
 
         for sex, test_id in test_cases:
             passenger_request = PassengerRequest(
@@ -119,7 +112,7 @@ class TestMapper:
                 SibSp=0,
                 Parch=0,
                 Fare=75.0,
-                Embarked="Q"
+                Embarked="Q",
             )
 
             result = map_request_to_dynamodb_item(passenger_request)
@@ -127,11 +120,7 @@ class TestMapper:
 
     def test_map_all_embarked_values(self):
         """Testa mapeamento para todos os portos de embarque."""
-        test_cases = [
-            ("S", "southampton"),
-            ("C", "cherbourg"),
-            ("Q", "queenstown")
-        ]
+        test_cases = [("S", "southampton"), ("C", "cherbourg"), ("Q", "queenstown")]
 
         for embarked, test_id in test_cases:
             passenger_request = PassengerRequest(
@@ -142,7 +131,7 @@ class TestMapper:
                 SibSp=1,
                 Parch=0,
                 Fare=25.0,
-                Embarked=embarked
+                Embarked=embarked,
             )
 
             result = map_request_to_dynamodb_item(passenger_request)
@@ -158,7 +147,7 @@ class TestMapper:
             SibSp=0,  # Mínimo SibSp
             Parch=0,  # Mínimo Parch
             Fare=0.0,  # Tarifa mínima
-            Embarked="S"
+            Embarked="S",
         )
 
         result = map_request_to_dynamodb_item(passenger_request)
@@ -175,10 +164,10 @@ class TestMapper:
             Pclass=1,
             Sex="female",
             Age=120.0,  # Idade máxima
-            SibSp=8,    # Alto número de irmãos/cônjuges
-            Parch=6,    # Alto número de pais/filhos
-            Fare=500.0, # Tarifa alta
-            Embarked="C"
+            SibSp=8,  # Alto número de irmãos/cônjuges
+            Parch=6,  # Alto número de pais/filhos
+            Fare=500.0,  # Tarifa alta
+            Embarked="C",
         )
 
         result = map_request_to_dynamodb_item(passenger_request)
@@ -198,7 +187,7 @@ class TestMapper:
             SibSp=2,
             Parch=1,
             Fare=88.75,
-            Embarked="Q"
+            Embarked="Q",
         )
 
         result = map_request_to_dynamodb_item(passenger_request)
@@ -223,14 +212,20 @@ class TestMapper:
             SibSp=0,
             Parch=1,
             Fare=120.0,
-            Embarked="S"
+            Embarked="S",
         )
 
         result = map_request_to_dynamodb_item(passenger_request)
 
         expected_fields = [
-            "passenger_id", "Pclass", "Sex", "Age", 
-            "SibSp", "Parch", "Fare", "Embarked"
+            "passenger_id",
+            "Pclass",
+            "Sex",
+            "Age",
+            "SibSp",
+            "Parch",
+            "Fare",
+            "Embarked",
         ]
 
         for field in expected_fields:

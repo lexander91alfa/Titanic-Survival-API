@@ -218,7 +218,9 @@ class TestPassengerControllerAdvanced:
 
     def test_save_passenger_with_decimal_conversion(self, passenger_controller):
         """Testa se os valores float são convertidos para Decimal corretamente."""
-        with patch.object(passenger_controller.prediction_service, 'predict', return_value=0.8542):
+        with patch.object(
+            passenger_controller.prediction_service, "predict", return_value=0.8542
+        ):
             requests_data = [
                 PassengerRequest(
                     PassengerId="test_decimal",
@@ -232,7 +234,9 @@ class TestPassengerControllerAdvanced:
                 )
             ]
 
-            with patch.object(passenger_controller.passenger_repository, 'save') as mock_save:
+            with patch.object(
+                passenger_controller.passenger_repository, "save"
+            ) as mock_save:
                 response = passenger_controller.save_passenger(requests_data)
 
                 # Verificar se save foi chamado com valores Decimal
@@ -240,15 +244,19 @@ class TestPassengerControllerAdvanced:
                 assert isinstance(saved_data["Age"], Decimal)
                 assert isinstance(saved_data["Fare"], Decimal)
                 assert isinstance(saved_data["survival_probability"], Decimal)
-                
+
                 # Verificar resposta
                 assert len(response) == 1
                 assert response[0].id == "test_decimal"
                 assert response[0].probability == 0.8542
 
-    def test_save_passenger_returns_prediction_response_objects(self, passenger_controller):
+    def test_save_passenger_returns_prediction_response_objects(
+        self, passenger_controller
+    ):
         """Testa se save_passenger retorna objetos PredictionResponse."""
-        with patch.object(passenger_controller.prediction_service, 'predict', return_value=0.75):
+        with patch.object(
+            passenger_controller.prediction_service, "predict", return_value=0.75
+        ):
             requests_data = [
                 PassengerRequest(
                     PassengerId="response_test",
@@ -271,7 +279,9 @@ class TestPassengerControllerAdvanced:
 
     def test_save_passenger_probability_rounding(self, passenger_controller):
         """Testa se a probabilidade é arredondada para 4 casas decimais."""
-        with patch.object(passenger_controller.prediction_service, 'predict', return_value=0.123456789):
+        with patch.object(
+            passenger_controller.prediction_service, "predict", return_value=0.123456789
+        ):
             requests_data = [
                 PassengerRequest(
                     PassengerId="rounding_test",
@@ -291,39 +301,50 @@ class TestPassengerControllerAdvanced:
 
     def test_get_all_passengers_empty_list(self, passenger_controller):
         """Testa get_all_passengers quando não há passageiros."""
-        with patch.object(passenger_controller.passenger_repository, 'get_all', return_value=[]):
+        with patch.object(
+            passenger_controller.passenger_repository, "get_all", return_value=[]
+        ):
             result = passenger_controller.get_all_passengers()
             assert result == []
 
     def test_get_passenger_by_id_not_found(self, passenger_controller):
         """Testa get_passenger_by_id quando passageiro não é encontrado."""
-        with patch.object(passenger_controller.passenger_repository, 'get_by_id', return_value=None):
+        with patch.object(
+            passenger_controller.passenger_repository, "get_by_id", return_value=None
+        ):
             result = passenger_controller.get_passenger_by_id("nonexistent")
             assert result is None
 
     def test_delete_passenger_success_message(self, passenger_controller):
         """Testa se delete_passenger retorna mensagem de sucesso correta."""
-        with patch.object(passenger_controller.passenger_repository, 'delete'):
+        with patch.object(passenger_controller.passenger_repository, "delete"):
             result = passenger_controller.delete_passenger("test_id")
             expected_message = "Passenger with ID test_id deleted successfully."
             assert result["message"] == expected_message
 
     def test_error_logging(self, passenger_controller):
         """Testa se erros são logados corretamente."""
-        with patch.object(passenger_controller.logger, 'error') as mock_log_error:
-            with patch.object(passenger_controller.passenger_repository, 'get_all', 
-                            side_effect=Exception("Database connection failed")):
-                
+        with patch.object(passenger_controller.logger, "error") as mock_log_error:
+            with patch.object(
+                passenger_controller.passenger_repository,
+                "get_all",
+                side_effect=Exception("Database connection failed"),
+            ):
+
                 with pytest.raises(Exception):
                     passenger_controller.get_all_passengers()
-                
+
                 mock_log_error.assert_called_once()
                 assert "Database connection failed" in str(mock_log_error.call_args)
 
     def test_mapper_integration(self, passenger_controller):
         """Testa integração com o mapper."""
-        with patch.object(passenger_controller.prediction_service, 'predict', return_value=0.6):
-            with patch('src.controllers.passenger_controller.map_request_to_dynamodb_item') as mock_mapper:
+        with patch.object(
+            passenger_controller.prediction_service, "predict", return_value=0.6
+        ):
+            with patch(
+                "src.controllers.passenger_controller.map_request_to_dynamodb_item"
+            ) as mock_mapper:
                 mock_mapper.return_value = {
                     "passenger_id": "mapper_test",
                     "Pclass": 1,
@@ -332,7 +353,7 @@ class TestPassengerControllerAdvanced:
                     "SibSp": 0,
                     "Parch": 1,
                     "Fare": 50.0,
-                    "Embarked": "C"
+                    "Embarked": "C",
                 }
 
                 requests_data = [

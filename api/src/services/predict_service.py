@@ -10,6 +10,7 @@ import os
 
 class ModelConfig:
     """Configurações padrão para preprocessing do modelo."""
+
     DEFAULT_AGE = 29.7  # Média da idade no dataset Titanic
     DEFAULT_FARE = 32.2  # Média da tarifa no dataset Titanic
     DEFAULT_EMBARKED = "S"  # Mais comum no dataset
@@ -75,9 +76,21 @@ class PredictionService:
 
         try:
             # Usar valores padrão baseados em estatísticas do dataset
-            age = data.get("Age") if data.get("Age") is not None else ModelConfig.DEFAULT_AGE
-            fare = data.get("Fare") if data.get("Fare") is not None else ModelConfig.DEFAULT_FARE
-            embarked = data.get("Embarked") if data.get("Embarked") is not None else ModelConfig.DEFAULT_EMBARKED
+            age = (
+                data.get("Age")
+                if data.get("Age") is not None
+                else ModelConfig.DEFAULT_AGE
+            )
+            fare = (
+                data.get("Fare")
+                if data.get("Fare") is not None
+                else ModelConfig.DEFAULT_FARE
+            )
+            embarked = (
+                data.get("Embarked")
+                if data.get("Embarked") is not None
+                else ModelConfig.DEFAULT_EMBARKED
+            )
 
             sex_male = 1 if data.get("Sex") == "male" else 0
 
@@ -118,7 +131,7 @@ class PredictionService:
                 )
 
             # Validar se o modelo tem o método predict_proba
-            if not hasattr(self.model, 'predict_proba'):
+            if not hasattr(self.model, "predict_proba"):
                 raise RuntimeError(
                     "Modelo carregado não possui o método predict_proba necessário."
                 )
@@ -131,9 +144,13 @@ class PredictionService:
 
             # Validar se a probabilidade está no range esperado
             if not 0.0 <= survival_probability <= 1.0:
-                self.logger.warning(f"Probabilidade fora do range esperado: {survival_probability}")
+                self.logger.warning(
+                    f"Probabilidade fora do range esperado: {survival_probability}"
+                )
 
-            self.logger.info(f"Predição realizada com sucesso: {survival_probability:.4f}")
+            self.logger.info(
+                f"Predição realizada com sucesso: {survival_probability:.4f}"
+            )
             return survival_probability
         except Exception as e:
             self.logger.error(f"ERRO: Falha na predição. Causa: {e}")

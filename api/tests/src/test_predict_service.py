@@ -18,10 +18,12 @@ class TestModelConfig:
 class TestPredictionService:
     """Testes para a classe PredictionService."""
 
-    @patch('src.services.predict_service.joblib.load')
-    @patch('builtins.open', new_callable=mock_open)
-    @patch('os.path.join')
-    def test_load_model_with_joblib_success(self, mock_join, mock_file, mock_joblib_load):
+    @patch("src.services.predict_service.joblib.load")
+    @patch("builtins.open", new_callable=mock_open)
+    @patch("os.path.join")
+    def test_load_model_with_joblib_success(
+        self, mock_join, mock_file, mock_joblib_load
+    ):
         """Testa carregamento do modelo com joblib com sucesso."""
         # Arrange
         mock_join.return_value = "models/model"
@@ -36,10 +38,12 @@ class TestPredictionService:
         mock_file.assert_called_once_with("models/model.joblib", "rb")
         mock_joblib_load.assert_called_once()
 
-    @patch('src.services.predict_service.pickle.load')
-    @patch('builtins.open', new_callable=mock_open)
-    @patch('os.path.join')
-    def test_load_model_with_pickle_success(self, mock_join, mock_file, mock_pickle_load):
+    @patch("src.services.predict_service.pickle.load")
+    @patch("builtins.open", new_callable=mock_open)
+    @patch("os.path.join")
+    def test_load_model_with_pickle_success(
+        self, mock_join, mock_file, mock_pickle_load
+    ):
         """Testa carregamento do modelo com pickle com sucesso."""
         # Arrange
         mock_join.return_value = "models/model"
@@ -54,7 +58,7 @@ class TestPredictionService:
         mock_file.assert_called_once_with("models/model.pkl", "rb")
         mock_pickle_load.assert_called_once()
 
-    @patch('os.path.join')
+    @patch("os.path.join")
     def test_load_model_invalid_method(self, mock_join):
         """Testa carregamento do modelo com método inválido."""
         # Arrange
@@ -63,11 +67,11 @@ class TestPredictionService:
         # Act & Assert
         with pytest.raises(ValueError) as exc_info:
             PredictionService(model_name="model", method="invalid_method")
-        
+
         assert "Método de carregamento inválido" in str(exc_info.value)
 
-    @patch('builtins.open', side_effect=FileNotFoundError("File not found"))
-    @patch('os.path.join')
+    @patch("builtins.open", side_effect=FileNotFoundError("File not found"))
+    @patch("os.path.join")
     def test_load_model_file_not_found(self, mock_join, mock_file):
         """Testa carregamento do modelo quando arquivo não existe."""
         # Arrange
@@ -77,9 +81,11 @@ class TestPredictionService:
         with pytest.raises(FileNotFoundError):
             PredictionService(model_name="model", method="joblib")
 
-    @patch('src.services.predict_service.joblib.load', side_effect=Exception("Load error"))
-    @patch('builtins.open', new_callable=mock_open)
-    @patch('os.path.join')
+    @patch(
+        "src.services.predict_service.joblib.load", side_effect=Exception("Load error")
+    )
+    @patch("builtins.open", new_callable=mock_open)
+    @patch("os.path.join")
     def test_load_model_general_exception(self, mock_join, mock_file, mock_joblib_load):
         """Testa carregamento do modelo com exceção geral."""
         # Arrange
@@ -88,17 +94,17 @@ class TestPredictionService:
         # Act & Assert
         with pytest.raises(Exception) as exc_info:
             PredictionService(model_name="model", method="joblib")
-        
+
         assert "Load error" in str(exc_info.value)
 
     def test_preprocess_complete_data(self):
         """Testa preprocessamento com dados completos."""
         # Arrange
-        with patch('src.services.predict_service.joblib.load'), \
-             patch('builtins.open', new_callable=mock_open), \
-             patch('os.path.join'):
+        with patch("src.services.predict_service.joblib.load"), patch(
+            "builtins.open", new_callable=mock_open
+        ), patch("os.path.join"):
             service = PredictionService(model_name="model")
-        
+
         data = {
             "Pclass": 3,
             "Sex": "male",
@@ -106,7 +112,7 @@ class TestPredictionService:
             "SibSp": 1,
             "Parch": 0,
             "Fare": 7.25,
-            "Embarked": "S"
+            "Embarked": "S",
         }
 
         # Act
@@ -119,11 +125,11 @@ class TestPredictionService:
     def test_preprocess_missing_optional_fields(self):
         """Testa preprocessamento com campos opcionais ausentes."""
         # Arrange
-        with patch('src.services.predict_service.joblib.load'), \
-             patch('builtins.open', new_callable=mock_open), \
-             patch('os.path.join'):
+        with patch("src.services.predict_service.joblib.load"), patch(
+            "builtins.open", new_callable=mock_open
+        ), patch("os.path.join"):
             service = PredictionService(model_name="model")
-        
+
         data = {
             "Pclass": 1,
             "Sex": "female",
@@ -142,11 +148,11 @@ class TestPredictionService:
     def test_preprocess_female_embarked_q(self):
         """Testa preprocessamento para mulher embarcada em Queenstown."""
         # Arrange
-        with patch('src.services.predict_service.joblib.load'), \
-             patch('builtins.open', new_callable=mock_open), \
-             patch('os.path.join'):
+        with patch("src.services.predict_service.joblib.load"), patch(
+            "builtins.open", new_callable=mock_open
+        ), patch("os.path.join"):
             service = PredictionService(model_name="model")
-        
+
         data = {
             "Pclass": 1,
             "Sex": "female",
@@ -154,24 +160,26 @@ class TestPredictionService:
             "SibSp": 0,
             "Parch": 0,
             "Fare": 100.0,
-            "Embarked": "Q"
+            "Embarked": "Q",
         }
 
         # Act
         result = service._preprocess(data)
 
         # Assert
-        expected = np.array([[1, 25.0, 0, 0, 100.0, 0, 1, 0]])  # embarked_q=1, sex_male=0
+        expected = np.array(
+            [[1, 25.0, 0, 0, 100.0, 0, 1, 0]]
+        )  # embarked_q=1, sex_male=0
         np.testing.assert_array_equal(result, expected)
 
     def test_preprocess_embarked_c(self):
         """Testa preprocessamento para embarque em Cherbourg."""
         # Arrange
-        with patch('src.services.predict_service.joblib.load'), \
-             patch('builtins.open', new_callable=mock_open), \
-             patch('os.path.join'):
+        with patch("src.services.predict_service.joblib.load"), patch(
+            "builtins.open", new_callable=mock_open
+        ), patch("os.path.join"):
             service = PredictionService(model_name="model")
-        
+
         data = {
             "Pclass": 2,
             "Sex": "male",
@@ -179,14 +187,16 @@ class TestPredictionService:
             "SibSp": 1,
             "Parch": 2,
             "Fare": 50.0,
-            "Embarked": "C"
+            "Embarked": "C",
         }
 
         # Act
         result = service._preprocess(data)
 
         # Assert
-        expected = np.array([[2, 30.0, 1, 2, 50.0, 1, 0, 0]])  # embarked_q=0, embarked_s=0
+        expected = np.array(
+            [[2, 30.0, 1, 2, 50.0, 1, 0, 0]]
+        )  # embarked_q=0, embarked_s=0
         np.testing.assert_array_equal(result, expected)
 
     def test_predict_success(self):
@@ -194,12 +204,12 @@ class TestPredictionService:
         # Arrange
         mock_model = MagicMock()
         mock_model.predict_proba.return_value = np.array([[0.3, 0.7]])
-        
-        with patch('src.services.predict_service.joblib.load', return_value=mock_model), \
-             patch('builtins.open', new_callable=mock_open), \
-             patch('os.path.join'):
+
+        with patch(
+            "src.services.predict_service.joblib.load", return_value=mock_model
+        ), patch("builtins.open", new_callable=mock_open), patch("os.path.join"):
             service = PredictionService(model_name="model")
-        
+
         data = {
             "Pclass": 1,
             "Sex": "female",
@@ -207,7 +217,7 @@ class TestPredictionService:
             "SibSp": 0,
             "Parch": 0,
             "Fare": 100.0,
-            "Embarked": "S"
+            "Embarked": "S",
         }
 
         # Act
@@ -220,19 +230,26 @@ class TestPredictionService:
     def test_predict_model_not_loaded(self):
         """Testa predição quando modelo não foi carregado."""
         # Arrange
-        with patch('src.services.predict_service.joblib.load'), \
-             patch('builtins.open', new_callable=mock_open), \
-             patch('os.path.join'):
+        with patch("src.services.predict_service.joblib.load"), patch(
+            "builtins.open", new_callable=mock_open
+        ), patch("os.path.join"):
             service = PredictionService(model_name="model")
-        
+
         service.model = None  # Simular modelo não carregado
-        
-        data = {"Pclass": 1, "Sex": "female", "Age": 25.0, "SibSp": 0, "Parch": 0, "Fare": 100.0}
+
+        data = {
+            "Pclass": 1,
+            "Sex": "female",
+            "Age": 25.0,
+            "SibSp": 0,
+            "Parch": 0,
+            "Fare": 100.0,
+        }
 
         # Act & Assert
         with pytest.raises(RuntimeError) as exc_info:
             service.predict(data)
-        
+
         assert "Modelo não foi carregado" in str(exc_info.value)
 
     def test_predict_model_without_predict_proba(self):
@@ -240,35 +257,51 @@ class TestPredictionService:
         # Arrange
         mock_model = MagicMock()
         del mock_model.predict_proba  # Remover o método
-        
-        with patch('src.services.predict_service.joblib.load', return_value=mock_model), \
-             patch('builtins.open', new_callable=mock_open), \
-             patch('os.path.join'):
+
+        with patch(
+            "src.services.predict_service.joblib.load", return_value=mock_model
+        ), patch("builtins.open", new_callable=mock_open), patch("os.path.join"):
             service = PredictionService(model_name="model")
-        
-        data = {"Pclass": 1, "Sex": "female", "Age": 25.0, "SibSp": 0, "Parch": 0, "Fare": 100.0}
+
+        data = {
+            "Pclass": 1,
+            "Sex": "female",
+            "Age": 25.0,
+            "SibSp": 0,
+            "Parch": 0,
+            "Fare": 100.0,
+        }
 
         # Act & Assert
         with pytest.raises(RuntimeError) as exc_info:
             service.predict(data)
-        
+
         assert "não possui o método predict_proba" in str(exc_info.value)
 
     def test_predict_probability_out_of_range_warning(self):
         """Testa predição que gera warning para probabilidade fora do range."""
         # Arrange
         mock_model = MagicMock()
-        mock_model.predict_proba.return_value = np.array([[0.0, 1.5]])  # Probabilidade > 1
-        
-        with patch('src.services.predict_service.joblib.load', return_value=mock_model), \
-             patch('builtins.open', new_callable=mock_open), \
-             patch('os.path.join'):
+        mock_model.predict_proba.return_value = np.array(
+            [[0.0, 1.5]]
+        )  # Probabilidade > 1
+
+        with patch(
+            "src.services.predict_service.joblib.load", return_value=mock_model
+        ), patch("builtins.open", new_callable=mock_open), patch("os.path.join"):
             service = PredictionService(model_name="model")
-        
-        data = {"Pclass": 1, "Sex": "female", "Age": 25.0, "SibSp": 0, "Parch": 0, "Fare": 100.0}
+
+        data = {
+            "Pclass": 1,
+            "Sex": "female",
+            "Age": 25.0,
+            "SibSp": 0,
+            "Parch": 0,
+            "Fare": 100.0,
+        }
 
         # Act
-        with patch.object(service.logger, 'warning') as mock_warning:
+        with patch.object(service.logger, "warning") as mock_warning:
             result = service.predict(data)
 
         # Assert
@@ -279,18 +312,20 @@ class TestPredictionService:
         """Testa predição quando preprocessamento falha."""
         # Arrange
         mock_model = MagicMock()
-        
-        with patch('src.services.predict_service.joblib.load', return_value=mock_model), \
-             patch('builtins.open', new_callable=mock_open), \
-             patch('os.path.join'):
+
+        with patch(
+            "src.services.predict_service.joblib.load", return_value=mock_model
+        ), patch("builtins.open", new_callable=mock_open), patch("os.path.join"):
             service = PredictionService(model_name="model")
-        
+
         # Simular erro no preprocessamento
-        with patch.object(service, '_preprocess', side_effect=Exception("Preprocessing error")):
+        with patch.object(
+            service, "_preprocess", side_effect=Exception("Preprocessing error")
+        ):
             data = {"Pclass": 1}
 
             # Act & Assert
             with pytest.raises(Exception) as exc_info:
                 service.predict(data)
-            
+
             assert "Preprocessing error" in str(exc_info.value)

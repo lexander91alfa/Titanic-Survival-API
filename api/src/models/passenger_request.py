@@ -8,9 +8,13 @@ class PassengerRequest(BaseModel):
     As regras são baseadas na análise do Titanic Dataset.
     """
 
-    PassengerId: str = Field(..., description="ID único do passageiro.", json_schema_extra={"example": "1"})
+    PassengerId: str = Field(
+        ..., description="ID único do passageiro.", json_schema_extra={"example": "1"}
+    )
     Pclass: int = Field(
-        ..., description="Classe do ticket. Deve ser 1, 2 ou 3.", json_schema_extra={"example": 3}
+        ...,
+        description="Classe do ticket. Deve ser 1, 2 ou 3.",
+        json_schema_extra={"example": 3},
     )
     Sex: Literal["male", "female"] = Field(
         ...,
@@ -25,10 +29,16 @@ class PassengerRequest(BaseModel):
         json_schema_extra={"example": 22.0},
     )
     SibSp: int = Field(
-        ..., ge=0, description="Número de irmãos ou cônjuges a bordo.", json_schema_extra={"example": 1}
+        ...,
+        ge=0,
+        description="Número de irmãos ou cônjuges a bordo.",
+        json_schema_extra={"example": 1},
     )
     Parch: int = Field(
-        ..., ge=0, description="Número de pais ou filhos a bordo.", json_schema_extra={"example": 0}
+        ...,
+        ge=0,
+        description="Número de pais ou filhos a bordo.",
+        json_schema_extra={"example": 0},
     )
     Fare: float = Field(
         ...,

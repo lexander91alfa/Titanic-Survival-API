@@ -53,14 +53,14 @@ def passenger_controller(passenger_repository):
 @fixture
 def mock_prediction_service():
     """Fixture para criar um mock do serviço de predição."""
-    with patch('src.services.predict_service.PredictionService') as mock_service:
+    with patch("src.services.predict_service.PredictionService") as mock_service:
         mock_instance = MagicMock()
         mock_instance.predict.return_value = 0.75
         mock_service.return_value = mock_instance
         yield mock_instance
 
 
-@fixture 
+@fixture
 def sample_passenger_data():
     """Fixture com dados de exemplo de passageiro."""
     return {
@@ -71,7 +71,7 @@ def sample_passenger_data():
         "SibSp": 0,
         "Parch": 1,
         "Fare": 100.0,
-        "Embarked": "S"
+        "Embarked": "S",
     }
 
 
@@ -84,8 +84,6 @@ def sample_api_gateway_event():
         "resource": "/sobreviventes",
         "pathParameters": None,
         "queryStringParameters": None,
-        "headers": {
-            "Content-Type": "application/json"
-        },
-        "body": None
+        "headers": {"Content-Type": "application/json"},
+        "body": None,
     }

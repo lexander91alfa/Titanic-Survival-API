@@ -7,7 +7,6 @@ from prediction_handler import lambda_handler
 class TestLambdaHandler:
     """Testes para o lambda_handler."""
 
-
     def test_handler_post_success(self, passenger_repository):
         """
         Testa o handler da Lambda com um evento POST válido, mockando as dependências.
@@ -60,28 +59,30 @@ class TestLambdaHandler:
         test_event = {
             "httpMethod": "POST",
             "path": "/sobreviventes",
-            "body": json.dumps([
-                {
-                    "PassengerId": "1",
-                    "Pclass": 1,
-                    "Sex": "female",
-                    "Age": 25.0,
-                    "SibSp": 0,
-                    "Parch": 1,
-                    "Fare": 100.0,
-                    "Embarked": "S",
-                },
-                {
-                    "PassengerId": "2",
-                    "Pclass": 3,
-                    "Sex": "male",
-                    "Age": 30.0,
-                    "SibSp": 1,
-                    "Parch": 0,
-                    "Fare": 20.0,
-                    "Embarked": "Q",
-                }
-            ]),
+            "body": json.dumps(
+                [
+                    {
+                        "PassengerId": "1",
+                        "Pclass": 1,
+                        "Sex": "female",
+                        "Age": 25.0,
+                        "SibSp": 0,
+                        "Parch": 1,
+                        "Fare": 100.0,
+                        "Embarked": "S",
+                    },
+                    {
+                        "PassengerId": "2",
+                        "Pclass": 3,
+                        "Sex": "male",
+                        "Age": 30.0,
+                        "SibSp": 1,
+                        "Parch": 0,
+                        "Fare": 20.0,
+                        "Embarked": "Q",
+                    },
+                ]
+            ),
         }
 
         response = lambda_handler(test_event, None)
@@ -98,11 +99,11 @@ class TestLambdaHandler:
             "path": "/sobreviventes",
         }
 
-        with patch('prediction_handler.PassengerController') as mock_controller:
+        with patch("prediction_handler.PassengerController") as mock_controller:
             mock_instance = MagicMock()
             mock_instance.get_all_passengers.return_value = [
                 {"passenger_id": "1", "survival_probability": 0.8},
-                {"passenger_id": "2", "survival_probability": 0.3}
+                {"passenger_id": "2", "survival_probability": 0.3},
             ]
             mock_controller.return_value = mock_instance
 
@@ -118,14 +119,14 @@ class TestLambdaHandler:
             "httpMethod": "GET",
             "path": "/sobreviventes/123",
             "resource": "/sobreviventes/{id}",
-            "pathParameters": {"id": "123"}
+            "pathParameters": {"id": "123"},
         }
 
-        with patch('prediction_handler.PassengerController') as mock_controller:
+        with patch("prediction_handler.PassengerController") as mock_controller:
             mock_instance = MagicMock()
             mock_instance.get_passenger_by_id.return_value = {
                 "passenger_id": "123",
-                "survival_probability": 0.75
+                "survival_probability": 0.75,
             }
             mock_controller.return_value = mock_instance
 
@@ -141,7 +142,7 @@ class TestLambdaHandler:
             "httpMethod": "GET",
             "path": "/sobreviventes/",
             "resource": "/sobreviventes/{id}",
-            "pathParameters": {}
+            "pathParameters": {},
         }
 
         response = lambda_handler(test_event, None)
@@ -155,10 +156,10 @@ class TestLambdaHandler:
         test_event = {
             "httpMethod": "DELETE",
             "path": "/sobreviventes/456",
-            "pathParameters": {"id": "456"}
+            "pathParameters": {"id": "456"},
         }
 
-        with patch('prediction_handler.PassengerController') as mock_controller:
+        with patch("prediction_handler.PassengerController") as mock_controller:
             mock_instance = MagicMock()
             mock_instance.delete_passenger.return_value = {
                 "message": "Passenger with ID 456 deleted successfully."
@@ -176,7 +177,7 @@ class TestLambdaHandler:
         test_event = {
             "httpMethod": "DELETE",
             "path": "/sobreviventes/",
-            "pathParameters": {}
+            "pathParameters": {},
         }
 
         response = lambda_handler(test_event, None)
@@ -190,14 +191,14 @@ class TestLambdaHandler:
             "path": "/health",
         }
 
-        with patch('prediction_handler.HealthCheck') as mock_health:
+        with patch("prediction_handler.HealthCheck") as mock_health:
             mock_instance = MagicMock()
             mock_instance.get_overall_health.return_value = {
                 "overall_status": "healthy",
                 "components": {
                     "model": {"status": "healthy"},
-                    "database": {"status": "healthy"}
-                }
+                    "database": {"status": "healthy"},
+                },
             }
             mock_health.return_value = mock_instance
 
@@ -214,14 +215,14 @@ class TestLambdaHandler:
             "path": "/health",
         }
 
-        with patch('prediction_handler.HealthCheck') as mock_health:
+        with patch("prediction_handler.HealthCheck") as mock_health:
             mock_instance = MagicMock()
             mock_instance.get_overall_health.return_value = {
                 "overall_status": "unhealthy",
                 "components": {
                     "model": {"status": "unhealthy"},
-                    "database": {"status": "healthy"}
-                }
+                    "database": {"status": "healthy"},
+                },
             }
             mock_health.return_value = mock_instance
 
@@ -236,19 +237,21 @@ class TestLambdaHandler:
         test_event = {
             "httpMethod": "POST",
             "path": "/sobreviventes",
-            "body": json.dumps({
-                "PassengerId": "error_test",
-                "Pclass": 1,
-                "Sex": "female",
-                "Age": 30.0,
-                "SibSp": 0,
-                "Parch": 0,
-                "Fare": 50.0,
-                "Embarked": "S",
-            }),
+            "body": json.dumps(
+                {
+                    "PassengerId": "error_test",
+                    "Pclass": 1,
+                    "Sex": "female",
+                    "Age": 30.0,
+                    "SibSp": 0,
+                    "Parch": 0,
+                    "Fare": 50.0,
+                    "Embarked": "S",
+                }
+            ),
         }
 
-        with patch('prediction_handler.PassengerController') as mock_controller:
+        with patch("prediction_handler.PassengerController") as mock_controller:
             mock_controller.side_effect = Exception("Internal error")
 
             response = lambda_handler(test_event, None)
@@ -263,21 +266,25 @@ class TestLambdaHandler:
         test_event = {
             "httpMethod": "POST",
             "path": "/sobreviventes",
-            "body": json.dumps({
-                "PassengerId": "business_error_test",
-                "Pclass": 1,
-                "Sex": "female",
-                "Age": 30.0,
-                "SibSp": 0,
-                "Parch": 0,
-                "Fare": 50.0,
-                "Embarked": "S",
-            }),
+            "body": json.dumps(
+                {
+                    "PassengerId": "business_error_test",
+                    "Pclass": 1,
+                    "Sex": "female",
+                    "Age": 30.0,
+                    "SibSp": 0,
+                    "Parch": 0,
+                    "Fare": 50.0,
+                    "Embarked": "S",
+                }
+            ),
         }
 
-        with patch('prediction_handler.PassengerController') as mock_controller:
+        with patch("prediction_handler.PassengerController") as mock_controller:
             mock_instance = MagicMock()
-            mock_instance.save_passenger.side_effect = ValueError("Business rule violation")
+            mock_instance.save_passenger.side_effect = ValueError(
+                "Business rule violation"
+            )
             mock_controller.return_value = mock_instance
 
             response = lambda_handler(test_event, None)

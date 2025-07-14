@@ -16,11 +16,11 @@ class TestPassengerRequest:
             "SibSp": 1,
             "Parch": 0,
             "Fare": 7.25,
-            "Embarked": "S"
+            "Embarked": "S",
         }
-        
+
         passenger = PassengerRequest(**passenger_data)
-        
+
         assert passenger.PassengerId == "1"
         assert passenger.Pclass == 3
         assert passenger.Sex == "male"
@@ -39,9 +39,9 @@ class TestPassengerRequest:
             "Age": 25.0,
             "SibSp": 0,
             "Parch": 1,
-            "Fare": 50.0
+            "Fare": 50.0,
         }
-        
+
         passenger = PassengerRequest(**passenger_data)
         assert passenger.Embarked is None
 
@@ -55,14 +55,17 @@ class TestPassengerRequest:
             "SibSp": 0,
             "Parch": 0,
             "Fare": 10.0,
-            "Embarked": "S"
+            "Embarked": "S",
         }
-        
+
         with pytest.raises(ValidationError) as exc_info:
             PassengerRequest(**passenger_data)
-        
+
         errors = exc_info.value.errors()
-        assert any("Classe do Ticket (Pclass) deve ser 1, 2 ou 3" in str(error) for error in errors)
+        assert any(
+            "Classe do Ticket (Pclass) deve ser 1, 2 ou 3" in str(error)
+            for error in errors
+        )
 
     def test_invalid_sex_value(self):
         """Testa validação de Sex com valor inválido."""
@@ -74,9 +77,9 @@ class TestPassengerRequest:
             "SibSp": 0,
             "Parch": 0,
             "Fare": 15.0,
-            "Embarked": "C"
+            "Embarked": "C",
         }
-        
+
         with pytest.raises(ValidationError):
             PassengerRequest(**passenger_data)
 
@@ -90,12 +93,12 @@ class TestPassengerRequest:
             "SibSp": 0,
             "Parch": 0,
             "Fare": 100.0,
-            "Embarked": "Q"
+            "Embarked": "Q",
         }
-        
+
         with pytest.raises(ValidationError) as exc_info:
             PassengerRequest(**passenger_data)
-        
+
         errors = exc_info.value.errors()
         # Verifica se há erro relacionado à idade
         assert any(error.get("loc") == ("Age",) for error in errors)
@@ -110,12 +113,12 @@ class TestPassengerRequest:
             "SibSp": 0,
             "Parch": 0,
             "Fare": 25.0,
-            "Embarked": "S"
+            "Embarked": "S",
         }
-        
+
         with pytest.raises(ValidationError) as exc_info:
             PassengerRequest(**passenger_data)
-        
+
         errors = exc_info.value.errors()
         # Verifica se há erro relacionado à idade
         assert any(error.get("loc") == ("Age",) for error in errors)
@@ -130,9 +133,9 @@ class TestPassengerRequest:
             "SibSp": -1,  # Inválido
             "Parch": 0,
             "Fare": 8.0,
-            "Embarked": "S"
+            "Embarked": "S",
         }
-        
+
         with pytest.raises(ValidationError):
             PassengerRequest(**passenger_data)
 
@@ -146,9 +149,9 @@ class TestPassengerRequest:
             "SibSp": 1,
             "Parch": -1,  # Inválido
             "Fare": 75.0,
-            "Embarked": "C"
+            "Embarked": "C",
         }
-        
+
         with pytest.raises(ValidationError):
             PassengerRequest(**passenger_data)
 
@@ -162,12 +165,12 @@ class TestPassengerRequest:
             "SibSp": 0,
             "Parch": 0,
             "Fare": -10.0,  # Inválido
-            "Embarked": "Q"
+            "Embarked": "Q",
         }
-        
+
         with pytest.raises(ValidationError) as exc_info:
             PassengerRequest(**passenger_data)
-        
+
         errors = exc_info.value.errors()
         # Verifica se há erro relacionado à tarifa
         assert any(error.get("loc") == ("Fare",) for error in errors)
@@ -182,9 +185,9 @@ class TestPassengerRequest:
             "SibSp": 0,
             "Parch": 1,
             "Fare": 12.0,
-            "Embarked": "X"  # Inválido
+            "Embarked": "X",  # Inválido
         }
-        
+
         with pytest.raises(ValidationError):
             PassengerRequest(**passenger_data)
 
@@ -197,9 +200,9 @@ class TestPassengerRequest:
             "Age": 25.0,
             # SibSp ausente
             "Parch": 0,
-            "Fare": 20.0
+            "Fare": 20.0,
         }
-        
+
         with pytest.raises(ValidationError):
             PassengerRequest(**passenger_data)
 
@@ -214,9 +217,9 @@ class TestPassengerRequest:
             "SibSp": 0,
             "Parch": 2,
             "Fare": 100.0,
-            "Embarked": "S"
+            "Embarked": "S",
         }
-        
+
         passenger_min = PassengerRequest(**passenger_data_min)
         assert passenger_min.Age == 0.0
 
@@ -229,8 +232,8 @@ class TestPassengerRequest:
             "SibSp": 0,
             "Parch": 0,
             "Fare": 50.0,
-            "Embarked": "C"
+            "Embarked": "C",
         }
-        
+
         passenger_max = PassengerRequest(**passenger_data_max)
         assert passenger_max.Age == 120.0

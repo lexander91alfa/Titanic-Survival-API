@@ -9,12 +9,8 @@ class TestHTTPAdapter:
 
     def test_adapter_initialization(self):
         """Testa inicialização do adapter."""
-        event = {
-            "httpMethod": "GET",
-            "path": "/test",
-            "body": None
-        }
-        
+        event = {"httpMethod": "GET", "path": "/test", "body": None}
+
         adapter = HTTPAdapter(event)
         assert adapter._event == event
         assert adapter._body is None
@@ -78,35 +74,35 @@ class TestHTTPAdapter:
         test_data = {"name": "test", "value": 123}
         event = {"body": json.dumps(test_data)}
         adapter = HTTPAdapter(event)
-        
+
         assert adapter.body == test_data
 
     def test_body_property_invalid_json(self):
         """Testa propriedade body com JSON inválido."""
         event = {"body": "invalid json"}
         adapter = HTTPAdapter(event)
-        
+
         assert adapter.body == {}
 
     def test_body_property_empty(self):
         """Testa propriedade body quando vazio."""
         event = {"body": ""}
         adapter = HTTPAdapter(event)
-        
+
         assert adapter.body == {}
 
     def test_body_property_null(self):
         """Testa propriedade body quando é null."""
         event = {"body": None}
         adapter = HTTPAdapter(event)
-        
+
         assert adapter.body == {}
 
     def test_body_property_missing(self):
         """Testa propriedade body quando ausente."""
         event = {}
         adapter = HTTPAdapter(event)
-        
+
         assert adapter.body == {}
 
     def test_body_property_caching(self):
@@ -114,12 +110,12 @@ class TestHTTPAdapter:
         test_data = {"cached": True}
         event = {"body": json.dumps(test_data)}
         adapter = HTTPAdapter(event)
-        
+
         # Primeira chamada
         first_call = adapter.body
         # Segunda chamada
         second_call = adapter.body
-        
+
         assert first_call == second_call
         assert first_call is second_call  # Mesmo objeto
 
@@ -127,7 +123,7 @@ class TestHTTPAdapter:
         """Testa build_response com dicionário."""
         data = {"message": "success", "count": 10}
         response = HTTPAdapter.build_response(200, data)
-        
+
         expected = {
             "statusCode": 200,
             "headers": {
@@ -136,14 +132,14 @@ class TestHTTPAdapter:
             },
             "body": json.dumps(data),
         }
-        
+
         assert response == expected
 
     def test_build_response_with_list(self):
         """Testa build_response com lista."""
         data = [{"id": 1}, {"id": 2}]
         response = HTTPAdapter.build_response(201, data)
-        
+
         assert response["statusCode"] == 201
         assert json.loads(response["body"]) == data
 
@@ -151,9 +147,9 @@ class TestHTTPAdapter:
         """Testa build_response com modelo Pydantic."""
         prediction = PredictionResponse(id="test_id", probability=0.75)
         response = HTTPAdapter.build_response(200, prediction)
-        
+
         expected_body = {"id": "test_id", "probability": 0.75}
-        
+
         assert response["statusCode"] == 200
         assert json.loads(response["body"]) == expected_body
 
@@ -161,21 +157,21 @@ class TestHTTPAdapter:
         """Testa build_response com string."""
         message = "Operation completed"
         response = HTTPAdapter.build_response(200, message)
-        
+
         assert response["statusCode"] == 200
         assert json.loads(response["body"]) == message
 
     def test_build_response_with_none(self):
         """Testa build_response com None."""
         response = HTTPAdapter.build_response(204, None)
-        
+
         assert response["statusCode"] == 204
         assert response["body"] is None
 
     def test_build_response_cors_headers(self):
         """Testa se headers CORS estão incluídos."""
         response = HTTPAdapter.build_response(200, {})
-        
+
         assert "Access-Control-Allow-Origin" in response["headers"]
         assert response["headers"]["Access-Control-Allow-Origin"] == "*"
         assert response["headers"]["Content-Type"] == "application/json"
@@ -187,9 +183,9 @@ class TestHTTPAdapter:
             (201, "Created"),
             (400, "Bad Request"),
             (404, "Not Found"),
-            (500, "Internal Server Error")
+            (500, "Internal Server Error"),
         ]
-        
+
         for status_code, message in test_cases:
             response = HTTPAdapter.build_response(status_code, {"message": message})
             assert response["statusCode"] == status_code
@@ -200,31 +196,28 @@ class TestHTTPAdapter:
             "httpMethod": "POST",
             "path": "/sobreviventes/123/predictions",
             "resource": "/sobreviventes/{id}/predictions",
-            "pathParameters": {
-                "id": "123"
-            },
-            "queryStringParameters": {
-                "format": "json",
-                "include": "metadata"
-            },
+            "pathParameters": {"id": "123"},
+            "queryStringParameters": {"format": "json", "include": "metadata"},
             "headers": {
                 "Content-Type": "application/json",
-                "Authorization": "Bearer token123"
+                "Authorization": "Bearer token123",
             },
-            "body": json.dumps({
-                "PassengerId": "123",
-                "Pclass": 1,
-                "Sex": "female",
-                "Age": 30.0,
-                "SibSp": 0,
-                "Parch": 1,
-                "Fare": 100.0,
-                "Embarked": "S"
-            })
+            "body": json.dumps(
+                {
+                    "PassengerId": "123",
+                    "Pclass": 1,
+                    "Sex": "female",
+                    "Age": 30.0,
+                    "SibSp": 0,
+                    "Parch": 1,
+                    "Fare": 100.0,
+                    "Embarked": "S",
+                }
+            ),
         }
-        
+
         adapter = HTTPAdapter(complex_event)
-        
+
         assert adapter.method == "POST"
         assert adapter.path == "/sobreviventes/123/predictions"
         assert adapter.resource == "/sobreviventes/{id}/predictions"
@@ -235,7 +228,7 @@ class TestHTTPAdapter:
     def test_empty_event_handling(self):
         """Testa handling de evento vazio."""
         adapter = HTTPAdapter({})
-        
+
         assert adapter.method is None
         assert adapter.path is None
         assert adapter.resource is None

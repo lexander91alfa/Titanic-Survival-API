@@ -11,7 +11,7 @@ class TestHealthCheck:
         """Setup executado antes de cada teste."""
         self.health_check = HealthCheck()
 
-    @patch('src.middleware.health_check.PredictionService')
+    @patch("src.middleware.health_check.PredictionService")
     def test_check_model_health_success(self, mock_prediction_service):
         """Testa verificação de saúde do modelo com sucesso."""
         # Arrange
@@ -27,11 +27,10 @@ class TestHealthCheck:
         assert result["message"] == "Modelo funcionando corretamente"
         assert result["test_probability"] == 0.75
         mock_prediction_service.assert_called_once_with(
-            model_name="model", 
-            method=AppConfig.get_model_method()
+            model_name="model", method=AppConfig.get_model_method()
         )
 
-    @patch('src.middleware.health_check.PredictionService')
+    @patch("src.middleware.health_check.PredictionService")
     def test_check_model_health_failure(self, mock_prediction_service):
         """Testa verificação de saúde do modelo com falha."""
         # Arrange
@@ -44,7 +43,7 @@ class TestHealthCheck:
         assert result["status"] == "unhealthy"
         assert "Modelo não encontrado" in result["message"]
 
-    @patch.object(AppConfig, 'is_development', return_value=True)
+    @patch.object(AppConfig, "is_development", return_value=True)
     def test_check_database_health_development_skipped(self, mock_is_dev):
         """Testa que a verificação de DB é pulada em desenvolvimento."""
         # Act
@@ -54,8 +53,8 @@ class TestHealthCheck:
         assert result["status"] == "skipped"
         assert "desenvolvimento" in result["message"]
 
-    @patch.object(AppConfig, 'is_development', return_value=False)
-    @patch('src.middleware.health_check.PassengerRepository')
+    @patch.object(AppConfig, "is_development", return_value=False)
+    @patch("src.middleware.health_check.PassengerRepository")
     def test_check_database_health_success(self, mock_repository, mock_is_dev):
         """Testa verificação de saúde do banco com sucesso."""
         # Arrange
@@ -70,8 +69,8 @@ class TestHealthCheck:
         assert result["status"] == "healthy"
         assert "DynamoDB funcionando" in result["message"]
 
-    @patch.object(AppConfig, 'is_development', return_value=False)
-    @patch('src.middleware.health_check.PassengerRepository')
+    @patch.object(AppConfig, "is_development", return_value=False)
+    @patch("src.middleware.health_check.PassengerRepository")
     def test_check_database_health_failure(self, mock_repository, mock_is_dev):
         """Testa verificação de saúde do banco com falha."""
         # Arrange
@@ -84,8 +83,8 @@ class TestHealthCheck:
         assert result["status"] == "unhealthy"
         assert "Conexão falhou" in result["message"]
 
-    @patch.object(HealthCheck, 'check_model_health')
-    @patch.object(HealthCheck, 'check_database_health')
+    @patch.object(HealthCheck, "check_model_health")
+    @patch.object(HealthCheck, "check_database_health")
     def test_get_overall_health_all_healthy(self, mock_db_health, mock_model_health):
         """Testa status geral quando todos os componentes estão saudáveis."""
         # Arrange
@@ -101,9 +100,11 @@ class TestHealthCheck:
         assert "database" in result["components"]
         assert "environment" in result
 
-    @patch.object(HealthCheck, 'check_model_health')
-    @patch.object(HealthCheck, 'check_database_health')
-    def test_get_overall_health_model_unhealthy(self, mock_db_health, mock_model_health):
+    @patch.object(HealthCheck, "check_model_health")
+    @patch.object(HealthCheck, "check_database_health")
+    def test_get_overall_health_model_unhealthy(
+        self, mock_db_health, mock_model_health
+    ):
         """Testa status geral quando o modelo não está saudável."""
         # Arrange
         mock_model_health.return_value = {"status": "unhealthy"}
@@ -115,9 +116,11 @@ class TestHealthCheck:
         # Assert
         assert result["overall_status"] == "unhealthy"
 
-    @patch.object(HealthCheck, 'check_model_health')
-    @patch.object(HealthCheck, 'check_database_health')
-    def test_get_overall_health_db_skipped_still_healthy(self, mock_db_health, mock_model_health):
+    @patch.object(HealthCheck, "check_model_health")
+    @patch.object(HealthCheck, "check_database_health")
+    def test_get_overall_health_db_skipped_still_healthy(
+        self, mock_db_health, mock_model_health
+    ):
         """Testa que status geral é healthy mesmo quando DB é pulado."""
         # Arrange
         mock_model_health.return_value = {"status": "healthy"}

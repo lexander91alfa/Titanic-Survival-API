@@ -33,7 +33,7 @@ class PassengerController:
 
                 response = PredictionResponse(
                     id=passenger.get("passenger_id", "unknown"),
-                    probability=round(float(survival_prob), 4)
+                    probability=round(float(survival_prob), 4),
                 )
                 result.append(response)
 
@@ -46,10 +46,10 @@ class PassengerController:
             self.logger.error(f"Unexpected error: {str(e)}")
             raise Exception(f"Unexpected error: {str(e)}")
 
-    def get_all_passengers(self):
-        """Retrieves all passengers from the repository."""
+    def get_all_passengers(self, page: int = 1, limit: int = 10):
+        """Retrieves all passengers from the repository with pagination."""
         try:
-            return self.passenger_repository.get_all()
+            return self.passenger_repository.get_all(page=page, limit=limit)
         except Exception as e:
             self.logger.error(f"Error retrieving passengers: {str(e)}")
             raise Exception(f"Error retrieving passengers: {str(e)}")

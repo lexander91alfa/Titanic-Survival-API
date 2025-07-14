@@ -20,12 +20,12 @@ def lambda_handler(event, _):
         match http_method:
             case "POST":
                 request_data = http_adapter.body
-                
+
                 if isinstance(request_data, list):
                     passengers = [PassengerRequest(**data) for data in request_data]
                 else:
                     passengers = [PassengerRequest(**request_data)]
-                
+
                 passengers_with_survival_probability = (
                     passenger_controller.save_passenger(passengers)
                 )
@@ -34,20 +34,43 @@ def lambda_handler(event, _):
                     result = passengers_with_survival_probability[0]
                     formatted_result = {
                         "PassengerId": result.id,
-                        "probability": result.probability
+                        "probability": result.probability,
                     }
                     return http_adapter.build_response(201, formatted_result)
                 else:
-                    return http_adapter.build_response(201, [p.model_dump() for p in passengers_with_survival_probability])
+                    return http_adapter.build_response(
+                        201,
+                        [p.model_dump() for p in passengers_with_survival_probability],
+                    )
 
             case "GET":
                 if http_adapter.path == "/health":
                     health_check = HealthCheck()
                     health_status = health_check.get_overall_health()
-                    status_code = 200 if health_status["overall_status"] == "healthy" else 503
+                    status_code = (
+                        200 if health_status["overall_status"] == "healthy" else 503
+                    )
                     return http_adapter.build_response(status_code, health_status)
                 elif http_adapter.path == "/sobreviventes":
-                    passengers = passenger_controller.get_all_passengers()
+                    if http_adapter.query_parameters:
+                        query_params = http_adapter.query_parameters
+                        page = query_params.get("page")
+                        limit = query_params.get("limit")
+                        if page:
+                            page = int(page)
+                        else:
+                            page = 1
+
+                        if limit:
+                            limit = int(limit)
+                        else:
+                            limit = 10
+
+                        passengers = passenger_controller.get_all_passengers(
+                            page=page, limit=limit
+                        )
+                    else:
+                        passengers = passenger_controller.get_all_passengers()
                     return http_adapter.build_response(200, passengers)
                 elif http_adapter.resource == "/sobreviventes/{id}":
                     passenger_id = http_adapter.path_parameters.get("id")
@@ -82,14 +105,20 @@ def lambda_handler(event, _):
     except ValidationError as ve:
         logger.error(f"Erro de validação: {str(ve)}")
         error_response = StandardErrorResponse.validation_error(ve.errors())
-        return http_adapter.build_response(error_response.status_code, error_response.model_dump())
+        return http_adapter.build_response(
+            error_response.status_code, error_response.model_dump()
+        )
 
     except ValueError as ve:
         logger.error(f"Erro de validação: {str(ve)}")
         error_response = StandardErrorResponse.business_error(str(ve))
-        return http_adapter.build_response(error_response.status_code, error_response.model_dump())
+        return http_adapter.build_response(
+            error_response.status_code, error_response.model_dump()
+        )
 
     except Exception as e:
         logger.error(f"Erro inesperado: {str(e)}")
         error_response = StandardErrorResponse.internal_error()
-        return http_adapter.build_response(error_response.status_code, error_response.model_dump())
+        return http_adapter.build_response(
+            error_response.status_code, error_response.model_dump()
+        )
