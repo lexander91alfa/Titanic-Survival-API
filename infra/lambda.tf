@@ -14,6 +14,7 @@ resource "aws_lambda_function" "prediction" {
   environment {
     variables = {
       DYNAMODB_TABLE_NAME = aws_dynamodb_table.passengers.name
+      LOG_LEVEL          = "INFO"
     }
   }
 
@@ -21,6 +22,10 @@ resource "aws_lambda_function" "prediction" {
 
   snap_start {
     apply_on = "PublishedVersions"
+  }
+
+  dead_letter_config {
+    target_arn = aws_sqs_queue.lambda_dlq.arn
   }
 
   tags = local.tags
@@ -32,14 +37,25 @@ resource "aws_lambda_function" "prediction" {
   ]
 }
 
-resource "aws_lambda_alias" "example_alias" {
-  name             = "live"
+resource "aws_lambda_alias" "production" {
+  name             = "production"
   function_name    = aws_lambda_function.prediction.function_name
   function_version = aws_lambda_function.prediction.version
+  
+  lifecycle {
+    ignore_changes = [function_version]
+  }
 }
 
 resource "aws_cloudwatch_log_group" "lambda_logs" {
   name              = "/aws/lambda/${local.lambda.function_name}"
   retention_in_days = 1
+  tags = local.tags
+}
+
+resource "aws_sqs_queue" "lambda_dlq" {
+  name                      = "${local.project_name}-lambda-dlq"
+  message_retention_seconds = 86400
+  
   tags = local.tags
 }

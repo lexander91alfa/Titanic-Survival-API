@@ -113,6 +113,98 @@ resource "aws_api_gateway_integration" "delete_sobrevivente_lambda" {
 }
 
 # ===================================================================
+# 3.1. CORS Configuration
+# ===================================================================
+
+resource "aws_api_gateway_method" "options_sobreviventes" {
+  rest_api_id   = aws_api_gateway_rest_api.titanic_api.id
+  resource_id   = aws_api_gateway_resource.sobreviventes.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "options_sobreviventes" {
+  rest_api_id = aws_api_gateway_rest_api.titanic_api.id
+  resource_id = aws_api_gateway_resource.sobreviventes.id
+  http_method = aws_api_gateway_method.options_sobreviventes.http_method
+  type        = "MOCK"
+
+  request_templates = {
+    "application/json" = "{\"statusCode\": 200}"
+  }
+}
+
+resource "aws_api_gateway_method_response" "options_sobreviventes" {
+  rest_api_id = aws_api_gateway_rest_api.titanic_api.id
+  resource_id = aws_api_gateway_resource.sobreviventes.id
+  http_method = aws_api_gateway_method.options_sobreviventes.http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+}
+
+resource "aws_api_gateway_integration_response" "options_sobreviventes" {
+  rest_api_id = aws_api_gateway_rest_api.titanic_api.id
+  resource_id = aws_api_gateway_resource.sobreviventes.id
+  http_method = aws_api_gateway_method.options_sobreviventes.http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+    "method.response.header.Access-Control-Allow-Methods" = "'GET,POST,OPTIONS'"
+    "method.response.header.Access-Control-Allow-Origin"  = "'*'"
+  }
+}
+
+resource "aws_api_gateway_method" "options_sobrevivente_id" {
+  rest_api_id   = aws_api_gateway_rest_api.titanic_api.id
+  resource_id   = aws_api_gateway_resource.sobrevivente_id.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "options_sobrevivente_id" {
+  rest_api_id = aws_api_gateway_rest_api.titanic_api.id
+  resource_id = aws_api_gateway_resource.sobrevivente_id.id
+  http_method = aws_api_gateway_method.options_sobrevivente_id.http_method
+  type        = "MOCK"
+
+  request_templates = {
+    "application/json" = "{\"statusCode\": 200}"
+  }
+}
+
+resource "aws_api_gateway_method_response" "options_sobrevivente_id" {
+  rest_api_id = aws_api_gateway_rest_api.titanic_api.id
+  resource_id = aws_api_gateway_resource.sobrevivente_id.id
+  http_method = aws_api_gateway_method.options_sobrevivente_id.http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+}
+
+resource "aws_api_gateway_integration_response" "options_sobrevivente_id" {
+  rest_api_id = aws_api_gateway_rest_api.titanic_api.id
+  resource_id = aws_api_gateway_resource.sobrevivente_id.id
+  http_method = aws_api_gateway_method.options_sobrevivente_id.http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+    "method.response.header.Access-Control-Allow-Methods" = "'GET,DELETE,OPTIONS'"
+    "method.response.header.Access-Control-Allow-Origin"  = "'*'"
+  }
+}
+
+# ===================================================================
 # 4. Deploy da API
 # ===================================================================
 resource "aws_api_gateway_deployment" "api_deployment" {
@@ -127,6 +219,8 @@ resource "aws_api_gateway_deployment" "api_deployment" {
         aws_api_gateway_method.get_all_sobreviventes.id,
         aws_api_gateway_method.get_one_sobrevivente.id,
         aws_api_gateway_method.delete_sobrevivente.id,
+        aws_api_gateway_method.options_sobreviventes.id,
+        aws_api_gateway_method.options_sobrevivente_id.id,
         aws_api_gateway_integration.post_sobreviventes_lambda.id,
         aws_api_gateway_integration.get_all_sobreviventes_lambda.id,
         aws_api_gateway_integration.get_one_sobrevivente_lambda.id,
@@ -205,12 +299,12 @@ resource "aws_api_gateway_usage_plan" "case_usage_plan" {
   }
 
   throttle_settings {
-    burst_limit = 5
-    rate_limit  = 10
+    burst_limit = 100   # Aumentado para produção
+    rate_limit  = 50    # Aumentado para produção
   }
 
   quota_settings {
-    limit  = 100
+    limit  = 1000       # Aumentado para produção
     period = "DAY"
   }
 
@@ -231,8 +325,7 @@ resource "aws_api_gateway_usage_plan_key" "case_plan_key" {
 
 resource "aws_cloudwatch_log_group" "api_gateway_logs" {
   name              = "/aws/apigateway/${local.project_name}"
-  retention_in_days = 1
-
+  retention_in_days = 7
   tags = local.tags
 }
 
