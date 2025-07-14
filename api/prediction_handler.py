@@ -10,10 +10,10 @@ from pydantic import ValidationError
 def lambda_handler(event, _):
     """Função Lambda para lidar com requisições HTTP."""
     try:
-        passenger_controller = PassengerController()
         logger = get_logger()
         http_adapter = HTTPAdapter(event)
         http_method = http_adapter.method
+        passenger_controller = PassengerController()
 
         logger.info(f"Requisição recebida: {http_method} {http_adapter.path}")
 
@@ -68,6 +68,11 @@ def lambda_handler(event, _):
                         )
                     result = passenger_controller.delete_passenger(passenger_id)
                     return http_adapter.build_response(200, result)
+                else:
+                    return http_adapter.build_response(
+                        400,
+                        {"error": "ID do passageiro é obrigatório para exclusão"},
+                    )
 
             case _:
                 return http_adapter.build_response(

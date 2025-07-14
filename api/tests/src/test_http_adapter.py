@@ -170,7 +170,7 @@ class TestHTTPAdapter:
         response = HTTPAdapter.build_response(204, None)
         
         assert response["statusCode"] == 204
-        assert json.loads(response["body"]) is None
+        assert response["body"] is None
 
     def test_build_response_cors_headers(self):
         """Testa se headers CORS estão incluídos."""

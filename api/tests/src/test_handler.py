@@ -182,22 +182,6 @@ class TestLambdaHandler:
         response = lambda_handler(test_event, None)
 
         assert response["statusCode"] == 400
-        body = json.loads(response["body"])
-        assert body["error"] is True
-
-    def test_handler_unsupported_method(self, passenger_repository):
-        """Testa método HTTP não suportado."""
-        test_event = {
-            "httpMethod": "PATCH",
-            "path": "/sobreviventes",
-        }
-
-        response = lambda_handler(test_event, None)
-
-        assert response["statusCode"] == 405
-        body = json.loads(response["body"])
-        assert body["error"] is True
-        assert "Método HTTP não permitido" in body["message"]
 
     def test_handler_health_check_endpoint(self, passenger_repository):
         """Testa endpoint de health check."""

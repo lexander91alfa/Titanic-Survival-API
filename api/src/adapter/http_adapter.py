@@ -67,5 +67,5 @@ class HTTPAdapter:
                 "Content-Type": "application/json",
                 "Access-Control-Allow-Origin": "*",  # Boa prática para CORS
             },
-            "body": json.dumps(body_content),
+            "body": json.dumps(body_content, ensure_ascii=False) if body_content is not None else None,
         }
