@@ -11,7 +11,7 @@ locals {
         handler      = "prediction_handler.lambda_handler"
         function_name = "${local.project_name}-prediction-function"
         description = "Lambda function for Titanic survival prediction"
-        architectures = ["x86_64"]
+        architectures = ["arm64"]
     }
 
     dynamodb = {

@@ -20,13 +20,24 @@ class TestPredictionService:
 
     @patch("src.services.predict_service.joblib.load")
     @patch("builtins.open", new_callable=mock_open)
+    @patch("os.path.exists")
     @patch("os.path.join")
     def test_load_model_with_joblib_success(
-        self, mock_join, mock_file, mock_joblib_load
+        self, mock_join, mock_exists, mock_file, mock_joblib_load
     ):
         """Testa carregamento do modelo com joblib com sucesso."""
         # Arrange
         mock_join.return_value = "models/model"
+        
+        # Configure os.path.exists to return False for optimized file and True for regular file
+        def mock_exists_side_effect(path):
+            if path.endswith("_optimized.joblib"):
+                return False
+            elif path.endswith(".joblib"):
+                return True
+            return False
+        
+        mock_exists.side_effect = mock_exists_side_effect
         mock_model = MagicMock()
         mock_joblib_load.return_value = mock_model
 
@@ -35,18 +46,27 @@ class TestPredictionService:
 
         # Assert
         assert service.model == mock_model
-        mock_file.assert_called_once_with("models/model.joblib", "rb")
+        mock_file.assert_called_with("models/model.joblib", "rb")
         mock_joblib_load.assert_called_once()
 
     @patch("src.services.predict_service.pickle.load")
     @patch("builtins.open", new_callable=mock_open)
+    @patch("os.path.exists")
     @patch("os.path.join")
     def test_load_model_with_pickle_success(
-        self, mock_join, mock_file, mock_pickle_load
+        self, mock_join, mock_exists, mock_file, mock_pickle_load
     ):
         """Testa carregamento do modelo com pickle com sucesso."""
         # Arrange
         mock_join.return_value = "models/model"
+        
+        # Configure os.path.exists to return True for .pkl file
+        def mock_exists_side_effect(path):
+            if path.endswith(".pkl"):
+                return True
+            return False
+        
+        mock_exists.side_effect = mock_exists_side_effect
         mock_model = MagicMock()
         mock_pickle_load.return_value = mock_model
 
@@ -55,14 +75,16 @@ class TestPredictionService:
 
         # Assert
         assert service.model == mock_model
-        mock_file.assert_called_once_with("models/model.pkl", "rb")
+        mock_file.assert_called_with("models/model.pkl", "rb")
         mock_pickle_load.assert_called_once()
 
+    @patch("os.path.exists")
     @patch("os.path.join")
-    def test_load_model_invalid_method(self, mock_join):
+    def test_load_model_invalid_method(self, mock_join, mock_exists):
         """Testa carregamento do modelo com método inválido."""
         # Arrange
         mock_join.return_value = "models/model"
+        mock_exists.return_value = True
 
         # Act & Assert
         with pytest.raises(ValueError) as exc_info:
@@ -71,38 +93,53 @@ class TestPredictionService:
         assert "Método de carregamento inválido" in str(exc_info.value)
 
     @patch("builtins.open", side_effect=FileNotFoundError("File not found"))
+    @patch("os.path.exists")
     @patch("os.path.join")
-    def test_load_model_file_not_found(self, mock_join, mock_file):
+    def test_load_model_file_not_found(self, mock_join, mock_exists, mock_file):
         """Testa carregamento do modelo quando arquivo não existe."""
         # Arrange
         mock_join.return_value = "models/model"
+        mock_exists.return_value = False  # Simula arquivo não encontrado
 
         # Act & Assert
-        with pytest.raises(FileNotFoundError):
+        with pytest.raises(FileNotFoundError) as exc_info:
             PredictionService(model_name="model", method="joblib", lazy_loading=False)
+        
+        assert "Nenhum arquivo de modelo encontrado para 'models/model'" in str(exc_info.value)
 
     @patch(
         "src.services.predict_service.joblib.load", side_effect=Exception("Load error")
     )
     @patch("builtins.open", new_callable=mock_open)
+    @patch("os.path.exists")
     @patch("os.path.join")
-    def test_load_model_general_exception(self, mock_join, mock_file, mock_joblib_load):
+    def test_load_model_general_exception(self, mock_join, mock_exists, mock_file, mock_joblib_load):
         """Testa carregamento do modelo com exceção geral."""
         # Arrange
         mock_join.return_value = "models/model"
+        
+        # Configure os.path.exists to return False for optimized file and True for regular file
+        def mock_exists_side_effect(path):
+            if path.endswith("_optimized.joblib"):
+                return False
+            elif path.endswith(".joblib"):
+                return True
+            return False
+        
+        mock_exists.side_effect = mock_exists_side_effect
 
         # Act & Assert
-        with pytest.raises(Exception) as exc_info:
+        with pytest.raises(FileNotFoundError) as exc_info:
             PredictionService(model_name="model", method="joblib", lazy_loading=False)
 
-        assert "Load error" in str(exc_info.value)
+        assert "Nenhum arquivo de modelo encontrado para 'models/model'" in str(exc_info.value)
 
     def test_preprocess_complete_data(self):
         """Testa preprocessamento com dados completos."""
         # Arrange
         with patch("src.services.predict_service.joblib.load"), patch(
             "builtins.open", new_callable=mock_open
-        ), patch("os.path.join"):
+        ), patch("os.path.join"), patch("os.path.exists", return_value=True):
             service = PredictionService(model_name="model", lazy_loading=False)
 
         data = {
@@ -127,7 +164,7 @@ class TestPredictionService:
         # Arrange
         with patch("src.services.predict_service.joblib.load"), patch(
             "builtins.open", new_callable=mock_open
-        ), patch("os.path.join"):
+        ), patch("os.path.join"), patch("os.path.exists", return_value=True):
             service = PredictionService(model_name="model", lazy_loading=False)
 
         data = {
@@ -150,7 +187,7 @@ class TestPredictionService:
         # Arrange
         with patch("src.services.predict_service.joblib.load"), patch(
             "builtins.open", new_callable=mock_open
-        ), patch("os.path.join"):
+        ), patch("os.path.join"), patch("os.path.exists", return_value=True):
             service = PredictionService(model_name="model", lazy_loading=False)
 
         data = {
@@ -177,7 +214,7 @@ class TestPredictionService:
         # Arrange
         with patch("src.services.predict_service.joblib.load"), patch(
             "builtins.open", new_callable=mock_open
-        ), patch("os.path.join"):
+        ), patch("os.path.join"), patch("os.path.exists", return_value=True):
             service = PredictionService(model_name="model", lazy_loading=False)
 
         data = {
@@ -207,7 +244,7 @@ class TestPredictionService:
 
         with patch(
             "src.services.predict_service.joblib.load", return_value=mock_model
-        ), patch("builtins.open", new_callable=mock_open), patch("os.path.join"):
+        ), patch("builtins.open", new_callable=mock_open), patch("os.path.join"), patch("os.path.exists", return_value=True):
             service = PredictionService(model_name="model", lazy_loading=False)
 
         data = {
@@ -232,7 +269,7 @@ class TestPredictionService:
         # Arrange
         with patch("src.services.predict_service.joblib.load"), patch(
             "builtins.open", new_callable=mock_open
-        ), patch("os.path.join"):
+        ), patch("os.path.join"), patch("os.path.exists", return_value=True):
             service = PredictionService(model_name="model", lazy_loading=False)
 
         service.model = None  # Simular modelo não carregado
@@ -260,7 +297,7 @@ class TestPredictionService:
 
         with patch(
             "src.services.predict_service.joblib.load", return_value=mock_model
-        ), patch("builtins.open", new_callable=mock_open), patch("os.path.join"):
+        ), patch("builtins.open", new_callable=mock_open), patch("os.path.join"), patch("os.path.exists", return_value=True):
             service = PredictionService(model_name="model", lazy_loading=False)
 
         data = {
@@ -288,7 +325,7 @@ class TestPredictionService:
 
         with patch(
             "src.services.predict_service.joblib.load", return_value=mock_model
-        ), patch("builtins.open", new_callable=mock_open), patch("os.path.join"):
+        ), patch("builtins.open", new_callable=mock_open), patch("os.path.join"), patch("os.path.exists", return_value=True):
             service = PredictionService(model_name="model", lazy_loading=False)
 
         data = {
@@ -315,7 +352,7 @@ class TestPredictionService:
 
         with patch(
             "src.services.predict_service.joblib.load", return_value=mock_model
-        ), patch("builtins.open", new_callable=mock_open), patch("os.path.join"):
+        ), patch("builtins.open", new_callable=mock_open), patch("os.path.join"), patch("os.path.exists", return_value=True):
             service = PredictionService(model_name="model", lazy_loading=False)
 
         # Simular erro no preprocessamento
