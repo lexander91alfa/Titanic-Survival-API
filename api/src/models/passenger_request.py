@@ -8,38 +8,38 @@ class PassengerRequest(BaseModel):
     As regras são baseadas na análise do Titanic Dataset.
     """
 
-    PassengerId: str = Field(..., description="ID único do passageiro.", example="1")
+    PassengerId: str = Field(..., description="ID único do passageiro.", json_schema_extra={"example": "1"})
     Pclass: int = Field(
-        ..., description="Classe do ticket. Deve ser 1, 2 ou 3.", example=3
+        ..., description="Classe do ticket. Deve ser 1, 2 ou 3.", json_schema_extra={"example": 3}
     )
     Sex: Literal["male", "female"] = Field(
         ...,
         description="Sexo do passageiro. Deve ser 'male' ou 'female'.",
-        example="male",
+        json_schema_extra={"example": "male"},
     )
     Age: float = Field(
         ...,
         ge=0.0,
         le=120.0,
         description="Idade do passageiro em anos. Deve ser entre 0 e 120.",
-        example=22.0,
+        json_schema_extra={"example": 22.0},
     )
     SibSp: int = Field(
-        ..., ge=0, description="Número de irmãos ou cônjuges a bordo.", example=1
+        ..., ge=0, description="Número de irmãos ou cônjuges a bordo.", json_schema_extra={"example": 1}
     )
     Parch: int = Field(
-        ..., ge=0, description="Número de pais ou filhos a bordo.", example=0
+        ..., ge=0, description="Número de pais ou filhos a bordo.", json_schema_extra={"example": 0}
     )
     Fare: float = Field(
         ...,
         ge=0.0,
         description="Tarifa paga pelo passageiro. Não pode ser negativa.",
-        example=7.25,
+        json_schema_extra={"example": 7.25},
     )
     Embarked: Optional[Literal["S", "C", "Q"]] = Field(
         None,
         description="Porto de embarque: S = Southampton, C = Cherbourg, Q = Queenstown.",
-        example="S",
+        json_schema_extra={"example": "S"},
     )
 
     @field_validator("Pclass")

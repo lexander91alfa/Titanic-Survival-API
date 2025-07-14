@@ -28,7 +28,7 @@ class TestHealthCheck:
         assert result["test_probability"] == 0.75
         mock_prediction_service.assert_called_once_with(
             model_name="model", 
-            method=AppConfig.MODEL_METHOD
+            method=AppConfig.get_model_method()
         )
 
     @patch('src.middleware.health_check.PredictionService')

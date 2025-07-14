@@ -38,7 +38,7 @@ def lambda_handler(event, _):
                     }
                     return http_adapter.build_response(201, formatted_result)
                 else:
-                    return http_adapter.build_response(201, passengers_with_survival_probability)
+                    return http_adapter.build_response(201, [p.model_dump() for p in passengers_with_survival_probability])
 
             case "GET":
                 if http_adapter.path == "/health":

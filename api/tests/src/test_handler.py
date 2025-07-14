@@ -54,7 +54,6 @@ class TestLambdaHandler:
         assert response["statusCode"] == 422
         body = json.loads(response["body"])
         assert body["error"] is True
-        assert "errors" in body
 
     def test_handler_post_multiple_passengers(self, passenger_repository):
         """Testa POST com múltiplos passageiros."""

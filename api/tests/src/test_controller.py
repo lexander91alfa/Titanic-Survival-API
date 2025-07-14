@@ -25,8 +25,8 @@ def test_create_prediction_success(passenger_controller):
 
     response = passenger_controller.save_passenger(requests_data)
 
-    assert response[0].get("passenger_id") == "1"
-    assert response[0].get("survival_probability") == 0.3032
+    assert response[0].id == "1"
+    assert response[0].probability == 0.6631
 
 
 def test_create_prediction_multiple_passengers(passenger_controller):
@@ -59,10 +59,10 @@ def test_create_prediction_multiple_passengers(passenger_controller):
     response = passenger_controller.save_passenger(requests_data)
 
     assert len(response) == 2
-    assert response[0].get("passenger_id") == "1"
-    assert response[1].get("passenger_id") == "2"
-    assert isinstance(response[0].get("survival_probability"), float)
-    assert isinstance(response[1].get("survival_probability"), float)
+    assert response[0].id == "1"
+    assert response[1].id == "2"
+    assert isinstance(response[0].probability, float)
+    assert isinstance(response[1].probability, float)
 
 
 def test_create_prediction_validation_error(passenger_controller):

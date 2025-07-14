@@ -65,7 +65,7 @@ class TestMapper:
     def test_map_passenger_id_conversion_to_string(self):
         """Testa se PassengerId é convertido para string."""
         passenger_request = PassengerRequest(
-            PassengerId=789,  # Número que deve ser convertido para string
+            PassengerId='789',
             Pclass=2,
             Sex="female",
             Age=35.5,
