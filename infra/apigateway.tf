@@ -65,6 +65,10 @@ resource "aws_api_gateway_method" "get_all_sobreviventes" {
   authorization  = "NONE"
   api_key_required = true
 
+  request_parameters = {
+    "method.request.querystring.page" = false
+    "method.request.querystring.limit" = false
+  }
 }
 
 resource "aws_api_gateway_integration" "get_all_sobreviventes_lambda" {
@@ -74,6 +78,19 @@ resource "aws_api_gateway_integration" "get_all_sobreviventes_lambda" {
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
   uri                     = aws_lambda_function.prediction.invoke_arn
+
+  request_parameters = {
+    "integration.request.querystring.page" = "method.request.querystring.page"
+    "integration.request.querystring.limit" = "method.request.querystring.limit"
+  }
+
+  request_templates = {
+    "application/json" = jsonencode({
+      page = "$util.escapeJavaScript($input.params('page'))"
+      limit = "$util.escapeJavaScript($input.params('limit'))"
+      defaultLimit = "10"
+    })
+  }
 
   depends_on = [aws_api_gateway_method.get_all_sobreviventes, aws_lambda_function.prediction]
 }

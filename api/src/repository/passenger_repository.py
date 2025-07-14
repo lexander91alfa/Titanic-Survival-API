@@ -19,9 +19,15 @@ class PassengerRepository:
         self.table = self.dynamodb.Table(table_name)
 
     def save(self, passenger_data: Dict[str, Any]) -> None:
-        """Salva os dados de um passageiro no DynamoDB."""
+        """Salva os dados de um passageiro no DynamoDB apenas se não existir."""
         try:
-            self.table.put_item(Item=passenger_data)
+            self.table.put_item(
+                Item=passenger_data,
+                ConditionExpression='attribute_not_exists(passenger_id)'
+            )
+        except self.dynamodb.meta.client.exceptions.ConditionalCheckFailedException:
+            self.logger.warning(f"Passageiro {passenger_data.get('passenger_id')} já existe")
+            raise ValueError(f"Passageiro {passenger_data.get('passenger_id')} já existe")
         except boto3.exceptions.Boto3Error as e:
             self.logger.error(f"Erro do boto3 ao salvar no DynamoDB: {e}")
             raise
@@ -41,11 +47,53 @@ class PassengerRepository:
             self.logger.error(f"Erro geral ao buscar passageiro {passenger_id}: {e}")
             raise
 
-    def get_all(self) -> List[Dict[str, Any]]:
-        """Retorna todos os passageiros da tabela."""
+    def get_all(self, page: int = 1, limit: int = 10) -> Dict[str, Any]:
+        """
+        Retorna todos os passageiros da tabela com suporte a paginação.
+        
+        Args:
+            page: Número da página (começando em 1)
+            limit: Número de itens por página (padrão: 10)
+            
+        Returns:
+            Dict contendo 'items', 'page', 'limit', 'total_pages' e 'count'
+        """
         try:
-            response = self.table.scan()
-            return response.get("Items", [])
+            # Calcula quantos itens pular baseado na página
+            items_to_skip = (page - 1) * limit
+            
+            scan_kwargs = {'Limit': limit}
+            
+            # Se não é a primeira página, precisa pular itens
+            if items_to_skip > 0:
+                # Fazer scan para pular os itens das páginas anteriores
+                temp_response = self.table.scan(Limit=items_to_skip)
+                if 'LastEvaluatedKey' in temp_response:
+                    scan_kwargs['ExclusiveStartKey'] = temp_response['LastEvaluatedKey']
+                else:
+                    # Se não há mais itens, retorna lista vazia
+                    return {
+                        'items': [],
+                        'page': page,
+                        'limit': limit,
+                        'total_pages': 0,
+                        'count': 0
+                    }
+            
+            response = self.table.scan(**scan_kwargs)
+            
+            # Conta total de itens para calcular total de páginas
+            total_count_response = self.table.scan(Select='COUNT')
+            total_count = total_count_response.get('Count', 0)
+            total_pages = (total_count + limit - 1) // limit  # Arredonda para cima
+            
+            return {
+                'items': response.get('Items', []),
+                'page': page,
+                'limit': limit,
+                'total_pages': total_pages,
+                'count': response.get('Count', 0)
+            }
         except boto3.exceptions.Boto3Error as e:
             self.logger.error(f"Erro do boto3 ao buscar todos os passageiros: {e}")
             raise
