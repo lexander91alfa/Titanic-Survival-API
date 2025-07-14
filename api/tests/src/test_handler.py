@@ -3,17 +3,29 @@ import pytest
 import os
 from unittest.mock import patch, MagicMock
 
+# Set environment variable before any imports
+os.environ["DYNAMODB_TABLE_NAME"] = "test-table"
 
-# Patch the environment variable before importing the lambda_handler
-@pytest.fixture(scope="session", autouse=True)
-def setup_environment():
-    """Setup global environment variables for all tests."""
-    with patch.dict(os.environ, {"DYNAMODB_TABLE_NAME": "test-table"}):
-        yield
-
-
-# Import after the environment is patched
+# Import after the environment is set
 from prediction_handler import lambda_handler
+
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_test_environment():
+    """Ensure test environment variables are set for the entire test session."""
+    # Backup original value if it exists
+    original_value = os.environ.get("DYNAMODB_TABLE_NAME")
+    
+    # Set test value
+    os.environ["DYNAMODB_TABLE_NAME"] = "test-table"
+    
+    yield
+    
+    # Restore original value or remove if it didn't exist
+    if original_value is not None:
+        os.environ["DYNAMODB_TABLE_NAME"] = original_value
+    else:
+        os.environ.pop("DYNAMODB_TABLE_NAME", None)
 
 
 class TestLambdaHandler:
