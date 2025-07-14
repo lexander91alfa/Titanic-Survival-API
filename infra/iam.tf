@@ -48,6 +48,11 @@ resource "aws_iam_policy" "lambda_policy" {
           "dynamodb:Query"
         ]
         Resource = aws_dynamodb_table.passengers.arn
+      },
+      {
+        Effect = "Allow"
+        Action = "sqs:SendMessage"
+        Resource = aws_sqs_queue.lambda_dlq.arn
       }
     ]
   })

@@ -16,26 +16,31 @@ class PassengerController:
     def save_passenger(self, passengers_data: List[PassengerRequest]):
         """Saves passenger data and returns survival probability and id."""
         try:
-            passengers = [map_request_to_dynamodb_item(p) for p in passengers_data]
-            passengers_with_survival_probability = [
-                {**p, "survival_probability": self.prediction_service.predict(p)}
-                for p in passengers
-            ]
-
-            for p in passengers_with_survival_probability:
-                for key, value in p.items():
+            result = []
+            
+            for passenger_request in passengers_data:
+                # Map and predict one at a time to reduce memory usage
+                passenger = map_request_to_dynamodb_item(passenger_request)
+                survival_prob = self.prediction_service.predict(passenger)
+                
+                # Convert floats to Decimal in-place
+                for key, value in passenger.items():
                     if isinstance(value, float):
-                        p[key] = Decimal(str(value))
+                        passenger[key] = Decimal(str(value))
+                
+                # Add survival probability as Decimal
+                passenger["survival_probability"] = Decimal(str(survival_prob))
+                
+                # Save immediately to reduce memory footprint
+                self.passenger_repository.save(passenger)
+                
+                # Build result with minimal data
+                result.append({
+                    "passenger_id": passenger.get("passenger_id", "unknown"),
+                    "survival_probability": round(float(survival_prob), 4),
+                })
 
-            [self.passenger_repository.save(p) for p in passengers_with_survival_probability]
-
-            return [
-                {
-                    "passenger_id": p.get("passenger_id", "unknown"),
-                    "survival_probability": round(float(p.get("survival_probability", 0.0)), 4),
-                }
-                for p in passengers_with_survival_probability
-            ]
+            return result
 
         except ValueError as ve:
             self.logger.error(f"Validation error: {str(ve)}")
