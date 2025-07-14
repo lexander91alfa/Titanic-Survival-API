@@ -1,16 +1,54 @@
 import json
 import pytest
+import os
 from unittest.mock import patch, MagicMock
+
+
+# Patch the environment variable before importing the lambda_handler
+@pytest.fixture(scope="session", autouse=True)
+def setup_environment():
+    """Setup global environment variables for all tests."""
+    with patch.dict(os.environ, {"DYNAMODB_TABLE_NAME": "test-table"}):
+        yield
+
+
+# Import after the environment is patched
 from prediction_handler import lambda_handler
 
 
 class TestLambdaHandler:
     """Testes para o lambda_handler."""
 
+    @pytest.fixture(autouse=True)
+    def setup_test_environment(self):
+        """Setup do ambiente de teste com todos os mocks necessários."""
+        with patch("src.repository.passenger_repository.boto3") as mock_boto3, \
+             patch("src.services.predict_service.PredictionService._load_model") as mock_load_model, \
+             patch("prediction_handler.passenger_controller") as mock_passenger_controller:
+            
+            # Configurar mock do modelo
+            mock_model = MagicMock()
+            mock_model.predict_proba.return_value = [[0.3, 0.7]]  # 70% chance de sobrevivência
+            mock_load_model.return_value = mock_model
+            
+            # Configurar mock do DynamoDB
+            mock_table = MagicMock()
+            mock_boto3.resource.return_value.Table.return_value = mock_table
+            
+            # Configurar mock do passenger_controller
+            self.mock_passenger_controller = mock_passenger_controller
+            
+            yield
+
     def test_handler_post_success(self, passenger_repository):
         """
         Testa o handler da Lambda com um evento POST válido, mockando as dependências.
         """
+        # Configure the mocked passenger controller
+        mock_passenger = MagicMock()
+        mock_passenger.id = "1"
+        mock_passenger.probability = 0.7
+        self.mock_passenger_controller.save_passenger.return_value = [mock_passenger]
 
         test_event = {
             "httpMethod": "POST",
@@ -56,6 +94,13 @@ class TestLambdaHandler:
 
     def test_handler_post_multiple_passengers(self, passenger_repository):
         """Testa POST com múltiplos passageiros."""
+        # Configure the mocked passenger controller for multiple passengers
+        mock_passenger1 = MagicMock()
+        mock_passenger1.model_dump.return_value = {"PassengerId": "1", "probability": 0.8}
+        mock_passenger2 = MagicMock()
+        mock_passenger2.model_dump.return_value = {"PassengerId": "2", "probability": 0.3}
+        self.mock_passenger_controller.save_passenger.return_value = [mock_passenger1, mock_passenger2]
+        
         test_event = {
             "httpMethod": "POST",
             "path": "/sobreviventes",
@@ -94,27 +139,31 @@ class TestLambdaHandler:
 
     def test_handler_get_all_passengers(self, passenger_repository):
         """Testa GET para todos os passageiros."""
+        # Configure the mocked passenger controller
+        self.mock_passenger_controller.get_all_passengers.return_value = [
+            {"passenger_id": "1", "survival_probability": 0.8},
+            {"passenger_id": "2", "survival_probability": 0.3},
+        ]
+        
         test_event = {
             "httpMethod": "GET",
             "path": "/sobreviventes",
         }
 
-        with patch("prediction_handler.PassengerController") as mock_controller:
-            mock_instance = MagicMock()
-            mock_instance.get_all_passengers.return_value = [
-                {"passenger_id": "1", "survival_probability": 0.8},
-                {"passenger_id": "2", "survival_probability": 0.3},
-            ]
-            mock_controller.return_value = mock_instance
+        response = lambda_handler(test_event, None)
 
-            response = lambda_handler(test_event, None)
-
-            assert response["statusCode"] == 200
-            body = json.loads(response["body"])
-            assert len(body) == 2
+        assert response["statusCode"] == 200
+        body = json.loads(response["body"])
+        assert len(body) == 2
 
     def test_handler_get_passenger_by_id(self, passenger_repository):
         """Testa GET para um passageiro específico."""
+        # Configure the mocked passenger controller
+        self.mock_passenger_controller.get_passenger_by_id.return_value = {
+            "passenger_id": "123",
+            "survival_probability": 0.75,
+        }
+        
         test_event = {
             "httpMethod": "GET",
             "path": "/sobreviventes/123",
@@ -122,19 +171,11 @@ class TestLambdaHandler:
             "pathParameters": {"id": "123"},
         }
 
-        with patch("prediction_handler.PassengerController") as mock_controller:
-            mock_instance = MagicMock()
-            mock_instance.get_passenger_by_id.return_value = {
-                "passenger_id": "123",
-                "survival_probability": 0.75,
-            }
-            mock_controller.return_value = mock_instance
+        response = lambda_handler(test_event, None)
 
-            response = lambda_handler(test_event, None)
-
-            assert response["statusCode"] == 200
-            body = json.loads(response["body"])
-            assert body["passenger_id"] == "123"
+        assert response["statusCode"] == 200
+        body = json.loads(response["body"])
+        assert body["passenger_id"] == "123"
 
     def test_handler_get_passenger_by_id_missing_parameter(self, passenger_repository):
         """Testa GET com ID ausente."""
@@ -153,24 +194,22 @@ class TestLambdaHandler:
 
     def test_handler_delete_passenger(self, passenger_repository):
         """Testa DELETE de um passageiro."""
+        # Configure the mocked passenger controller
+        self.mock_passenger_controller.delete_passenger.return_value = {
+            "message": "Passenger with ID 456 deleted successfully."
+        }
+        
         test_event = {
             "httpMethod": "DELETE",
             "path": "/sobreviventes/456",
             "pathParameters": {"id": "456"},
         }
 
-        with patch("prediction_handler.PassengerController") as mock_controller:
-            mock_instance = MagicMock()
-            mock_instance.delete_passenger.return_value = {
-                "message": "Passenger with ID 456 deleted successfully."
-            }
-            mock_controller.return_value = mock_instance
+        response = lambda_handler(test_event, None)
 
-            response = lambda_handler(test_event, None)
-
-            assert response["statusCode"] == 200
-            body = json.loads(response["body"])
-            assert "deleted successfully" in body["message"]
+        assert response["statusCode"] == 200
+        body = json.loads(response["body"])
+        assert "deleted successfully" in body["message"]
 
     def test_handler_delete_passenger_missing_id(self, passenger_repository):
         """Testa DELETE sem ID."""
@@ -234,6 +273,9 @@ class TestLambdaHandler:
 
     def test_handler_internal_server_error(self, passenger_repository):
         """Testa tratamento de erro interno do servidor."""
+        # Configure the mocked passenger controller to raise Exception
+        self.mock_passenger_controller.save_passenger.side_effect = Exception("Internal error")
+        
         test_event = {
             "httpMethod": "POST",
             "path": "/sobreviventes",
@@ -251,18 +293,20 @@ class TestLambdaHandler:
             ),
         }
 
-        with patch("prediction_handler.PassengerController") as mock_controller:
-            mock_controller.side_effect = Exception("Internal error")
+        response = lambda_handler(test_event, None)
 
-            response = lambda_handler(test_event, None)
-
-            assert response["statusCode"] == 500
-            body = json.loads(response["body"])
-            assert body["error"] is True
-            assert body["message"] == "Erro interno do servidor"
+        assert response["statusCode"] == 500
+        body = json.loads(response["body"])
+        assert body["error"] is True
+        assert body["message"] == "Erro interno do servidor"
 
     def test_handler_business_error(self, passenger_repository):
         """Testa tratamento de erro de negócio."""
+        # Configure the mocked passenger controller to raise ValueError
+        self.mock_passenger_controller.save_passenger.side_effect = ValueError(
+            "Business rule violation"
+        )
+        
         test_event = {
             "httpMethod": "POST",
             "path": "/sobreviventes",
@@ -280,16 +324,9 @@ class TestLambdaHandler:
             ),
         }
 
-        with patch("prediction_handler.PassengerController") as mock_controller:
-            mock_instance = MagicMock()
-            mock_instance.save_passenger.side_effect = ValueError(
-                "Business rule violation"
-            )
-            mock_controller.return_value = mock_instance
+        response = lambda_handler(test_event, None)
 
-            response = lambda_handler(test_event, None)
-
-            assert response["statusCode"] == 400
-            body = json.loads(response["body"])
-            assert body["error"] is True
-            assert "Business rule violation" in body["message"]
+        assert response["statusCode"] == 400
+        body = json.loads(response["body"])
+        assert body["error"] is True
+        assert "Business rule violation" in body["message"]

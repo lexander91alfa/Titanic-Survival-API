@@ -31,7 +31,7 @@ class TestPredictionService:
         mock_joblib_load.return_value = mock_model
 
         # Act
-        service = PredictionService(model_name="model", method="joblib")
+        service = PredictionService(model_name="model", method="joblib", lazy_loading=False)
 
         # Assert
         assert service.model == mock_model
@@ -51,7 +51,7 @@ class TestPredictionService:
         mock_pickle_load.return_value = mock_model
 
         # Act
-        service = PredictionService(model_name="model", method="pickle")
+        service = PredictionService(model_name="model", method="pickle", lazy_loading=False)
 
         # Assert
         assert service.model == mock_model
@@ -66,7 +66,7 @@ class TestPredictionService:
 
         # Act & Assert
         with pytest.raises(ValueError) as exc_info:
-            PredictionService(model_name="model", method="invalid_method")
+            PredictionService(model_name="model", method="invalid_method", lazy_loading=False)
 
         assert "Método de carregamento inválido" in str(exc_info.value)
 
@@ -79,7 +79,7 @@ class TestPredictionService:
 
         # Act & Assert
         with pytest.raises(FileNotFoundError):
-            PredictionService(model_name="model", method="joblib")
+            PredictionService(model_name="model", method="joblib", lazy_loading=False)
 
     @patch(
         "src.services.predict_service.joblib.load", side_effect=Exception("Load error")
@@ -93,7 +93,7 @@ class TestPredictionService:
 
         # Act & Assert
         with pytest.raises(Exception) as exc_info:
-            PredictionService(model_name="model", method="joblib")
+            PredictionService(model_name="model", method="joblib", lazy_loading=False)
 
         assert "Load error" in str(exc_info.value)
 
@@ -103,7 +103,7 @@ class TestPredictionService:
         with patch("src.services.predict_service.joblib.load"), patch(
             "builtins.open", new_callable=mock_open
         ), patch("os.path.join"):
-            service = PredictionService(model_name="model")
+            service = PredictionService(model_name="model", lazy_loading=False)
 
         data = {
             "Pclass": 3,
@@ -128,7 +128,7 @@ class TestPredictionService:
         with patch("src.services.predict_service.joblib.load"), patch(
             "builtins.open", new_callable=mock_open
         ), patch("os.path.join"):
-            service = PredictionService(model_name="model")
+            service = PredictionService(model_name="model", lazy_loading=False)
 
         data = {
             "Pclass": 1,
@@ -151,7 +151,7 @@ class TestPredictionService:
         with patch("src.services.predict_service.joblib.load"), patch(
             "builtins.open", new_callable=mock_open
         ), patch("os.path.join"):
-            service = PredictionService(model_name="model")
+            service = PredictionService(model_name="model", lazy_loading=False)
 
         data = {
             "Pclass": 1,
@@ -178,7 +178,7 @@ class TestPredictionService:
         with patch("src.services.predict_service.joblib.load"), patch(
             "builtins.open", new_callable=mock_open
         ), patch("os.path.join"):
-            service = PredictionService(model_name="model")
+            service = PredictionService(model_name="model", lazy_loading=False)
 
         data = {
             "Pclass": 2,
@@ -208,7 +208,7 @@ class TestPredictionService:
         with patch(
             "src.services.predict_service.joblib.load", return_value=mock_model
         ), patch("builtins.open", new_callable=mock_open), patch("os.path.join"):
-            service = PredictionService(model_name="model")
+            service = PredictionService(model_name="model", lazy_loading=False)
 
         data = {
             "Pclass": 1,
@@ -233,7 +233,7 @@ class TestPredictionService:
         with patch("src.services.predict_service.joblib.load"), patch(
             "builtins.open", new_callable=mock_open
         ), patch("os.path.join"):
-            service = PredictionService(model_name="model")
+            service = PredictionService(model_name="model", lazy_loading=False)
 
         service.model = None  # Simular modelo não carregado
 
@@ -261,7 +261,7 @@ class TestPredictionService:
         with patch(
             "src.services.predict_service.joblib.load", return_value=mock_model
         ), patch("builtins.open", new_callable=mock_open), patch("os.path.join"):
-            service = PredictionService(model_name="model")
+            service = PredictionService(model_name="model", lazy_loading=False)
 
         data = {
             "Pclass": 1,
@@ -289,7 +289,7 @@ class TestPredictionService:
         with patch(
             "src.services.predict_service.joblib.load", return_value=mock_model
         ), patch("builtins.open", new_callable=mock_open), patch("os.path.join"):
-            service = PredictionService(model_name="model")
+            service = PredictionService(model_name="model", lazy_loading=False)
 
         data = {
             "Pclass": 1,
@@ -316,7 +316,7 @@ class TestPredictionService:
         with patch(
             "src.services.predict_service.joblib.load", return_value=mock_model
         ), patch("builtins.open", new_callable=mock_open), patch("os.path.join"):
-            service = PredictionService(model_name="model")
+            service = PredictionService(model_name="model", lazy_loading=False)
 
         # Simular erro no preprocessamento
         with patch.object(

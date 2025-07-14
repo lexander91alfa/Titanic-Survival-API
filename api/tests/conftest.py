@@ -10,7 +10,7 @@ from src.services.predict_service import PredictionService
 from src.controllers.passenger_controller import PassengerController
 
 
-@fixture(scope="module", autouse=True)
+@fixture(scope="session", autouse=True)
 def aws_credentials():
     """Define credenciais AWS falsas para os testes."""
     os.environ["DYNAMODB_TABLE_NAME"] = "titanic-survival-api-passengers"

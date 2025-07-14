@@ -6,6 +6,10 @@ from src.logging.custom_logging import get_logger
 from src.adapter.http_adapter import HTTPAdapter
 from pydantic import ValidationError
 
+# Instanciar o controller fora da função para reutilizar entre chamadas
+# Isso evita recarregar o modelo a cada requisição (cold start optimization)
+passenger_controller = PassengerController()
+
 
 def lambda_handler(event, _):
     """Função Lambda para lidar com requisições HTTP."""
@@ -13,7 +17,6 @@ def lambda_handler(event, _):
         logger = get_logger()
         http_adapter = HTTPAdapter(event)
         http_method = http_adapter.method
-        passenger_controller = PassengerController()
 
         logger.info(f"Requisição recebida: {http_method} {http_adapter.path}")
 

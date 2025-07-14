@@ -19,6 +19,8 @@ class PassengerController:
         try:
             result = []
 
+            self.logger.info("Iniciando o salvamento dos passageiros.")
+
             for passenger_request in passengers_data:
                 passenger = map_request_to_dynamodb_item(passenger_request)
                 survival_prob = self.prediction_service.predict(passenger)
@@ -36,6 +38,8 @@ class PassengerController:
                     probability=round(float(survival_prob), 4),
                 )
                 result.append(response)
+
+            self.logger.info("Todos os passageiros foram salvos com sucesso.")
 
             return result
 
