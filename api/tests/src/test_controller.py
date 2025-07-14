@@ -1,6 +1,8 @@
-from src.models.passeger_request import PassengerRequest
-from unittest.mock import MagicMock
+from src.models.passenger_request import PassengerRequest
+from src.models.prediction_response import PredictionResponse
+from unittest.mock import MagicMock, patch
 import pytest
+from decimal import Decimal
 
 
 def test_create_prediction_success(passenger_controller):
@@ -209,3 +211,144 @@ def test_delete_passenger_error(passenger_controller):
         Exception, match="Error deleting passenger with ID 1: Delete operation failed"
     ):
         passenger_controller.delete_passenger("1")
+
+
+class TestPassengerControllerAdvanced:
+    """Testes avançados para o PassengerController."""
+
+    def test_save_passenger_with_decimal_conversion(self, passenger_controller):
+        """Testa se os valores float são convertidos para Decimal corretamente."""
+        with patch.object(passenger_controller.prediction_service, 'predict', return_value=0.8542):
+            requests_data = [
+                PassengerRequest(
+                    PassengerId="test_decimal",
+                    Pclass=1,
+                    Sex="female",
+                    Age=30.5,  # Float que deve ser convertido
+                    SibSp=0,
+                    Parch=1,
+                    Fare=75.75,  # Float que deve ser convertido
+                    Embarked="S",
+                )
+            ]
+
+            with patch.object(passenger_controller.passenger_repository, 'save') as mock_save:
+                response = passenger_controller.save_passenger(requests_data)
+
+                # Verificar se save foi chamado com valores Decimal
+                saved_data = mock_save.call_args[0][0]
+                assert isinstance(saved_data["Age"], Decimal)
+                assert isinstance(saved_data["Fare"], Decimal)
+                assert isinstance(saved_data["survival_probability"], Decimal)
+                
+                # Verificar resposta
+                assert len(response) == 1
+                assert response[0].id == "test_decimal"
+                assert response[0].probability == 0.8542
+
+    def test_save_passenger_returns_prediction_response_objects(self, passenger_controller):
+        """Testa se save_passenger retorna objetos PredictionResponse."""
+        with patch.object(passenger_controller.prediction_service, 'predict', return_value=0.75):
+            requests_data = [
+                PassengerRequest(
+                    PassengerId="response_test",
+                    Pclass=2,
+                    Sex="male",
+                    Age=40.0,
+                    SibSp=1,
+                    Parch=0,
+                    Fare=25.0,
+                    Embarked="Q",
+                )
+            ]
+
+            response = passenger_controller.save_passenger(requests_data)
+
+            assert len(response) == 1
+            assert isinstance(response[0], PredictionResponse)
+            assert response[0].id == "response_test"
+            assert response[0].probability == 0.75
+
+    def test_save_passenger_probability_rounding(self, passenger_controller):
+        """Testa se a probabilidade é arredondada para 4 casas decimais."""
+        with patch.object(passenger_controller.prediction_service, 'predict', return_value=0.123456789):
+            requests_data = [
+                PassengerRequest(
+                    PassengerId="rounding_test",
+                    Pclass=3,
+                    Sex="female",
+                    Age=25.0,
+                    SibSp=0,
+                    Parch=0,
+                    Fare=10.0,
+                    Embarked="S",
+                )
+            ]
+
+            response = passenger_controller.save_passenger(requests_data)
+
+            assert response[0].probability == 0.1235  # Arredondado para 4 casas
+
+    def test_get_all_passengers_empty_list(self, passenger_controller):
+        """Testa get_all_passengers quando não há passageiros."""
+        with patch.object(passenger_controller.passenger_repository, 'get_all', return_value=[]):
+            result = passenger_controller.get_all_passengers()
+            assert result == []
+
+    def test_get_passenger_by_id_not_found(self, passenger_controller):
+        """Testa get_passenger_by_id quando passageiro não é encontrado."""
+        with patch.object(passenger_controller.passenger_repository, 'get_by_id', return_value=None):
+            result = passenger_controller.get_passenger_by_id("nonexistent")
+            assert result is None
+
+    def test_delete_passenger_success_message(self, passenger_controller):
+        """Testa se delete_passenger retorna mensagem de sucesso correta."""
+        with patch.object(passenger_controller.passenger_repository, 'delete'):
+            result = passenger_controller.delete_passenger("test_id")
+            expected_message = "Passenger with ID test_id deleted successfully."
+            assert result["message"] == expected_message
+
+    def test_error_logging(self, passenger_controller):
+        """Testa se erros são logados corretamente."""
+        with patch.object(passenger_controller.logger, 'error') as mock_log_error:
+            with patch.object(passenger_controller.passenger_repository, 'get_all', 
+                            side_effect=Exception("Database connection failed")):
+                
+                with pytest.raises(Exception):
+                    passenger_controller.get_all_passengers()
+                
+                mock_log_error.assert_called_once()
+                assert "Database connection failed" in str(mock_log_error.call_args)
+
+    def test_mapper_integration(self, passenger_controller):
+        """Testa integração com o mapper."""
+        with patch.object(passenger_controller.prediction_service, 'predict', return_value=0.6):
+            with patch('src.controllers.passenger_controller.map_request_to_dynamodb_item') as mock_mapper:
+                mock_mapper.return_value = {
+                    "passenger_id": "mapper_test",
+                    "Pclass": 1,
+                    "Sex": "female",
+                    "Age": 30.0,
+                    "SibSp": 0,
+                    "Parch": 1,
+                    "Fare": 50.0,
+                    "Embarked": "C"
+                }
+
+                requests_data = [
+                    PassengerRequest(
+                        PassengerId="mapper_test",
+                        Pclass=1,
+                        Sex="female",
+                        Age=30.0,
+                        SibSp=0,
+                        Parch=1,
+                        Fare=50.0,
+                        Embarked="C",
+                    )
+                ]
+
+                response = passenger_controller.save_passenger(requests_data)
+
+                mock_mapper.assert_called_once()
+                assert response[0].id == "mapper_test"

@@ -2,7 +2,7 @@ from pytest import fixture
 import os
 import boto3
 from moto import mock_aws
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 import os
 
 from src.repository.passenger_repository import PassengerRepository
@@ -48,3 +48,44 @@ def passenger_repository(dynamodb_table):
 def passenger_controller(passenger_repository):
     """Fixture para criar a instância do controller com dependências mockadas."""
     return PassengerController()
+
+
+@fixture
+def mock_prediction_service():
+    """Fixture para criar um mock do serviço de predição."""
+    with patch('src.services.predict_service.PredictionService') as mock_service:
+        mock_instance = MagicMock()
+        mock_instance.predict.return_value = 0.75
+        mock_service.return_value = mock_instance
+        yield mock_instance
+
+
+@fixture 
+def sample_passenger_data():
+    """Fixture com dados de exemplo de passageiro."""
+    return {
+        "PassengerId": "test_123",
+        "Pclass": 1,
+        "Sex": "female",
+        "Age": 30.0,
+        "SibSp": 0,
+        "Parch": 1,
+        "Fare": 100.0,
+        "Embarked": "S"
+    }
+
+
+@fixture
+def sample_api_gateway_event():
+    """Fixture com evento de exemplo do API Gateway."""
+    return {
+        "httpMethod": "POST",
+        "path": "/sobreviventes",
+        "resource": "/sobreviventes",
+        "pathParameters": None,
+        "queryStringParameters": None,
+        "headers": {
+            "Content-Type": "application/json"
+        },
+        "body": None
+    }

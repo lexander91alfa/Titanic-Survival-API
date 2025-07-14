@@ -2,10 +2,17 @@ import pickle
 from typing import Any, Dict
 import joblib
 import numpy as np
-from src.models.passeger_request import PassengerRequest
+from src.models.passenger_request import PassengerRequest
 from src.logging.custom_logging import get_logger
 from sys import path
 import os
+
+
+class ModelConfig:
+    """Configurações padrão para preprocessing do modelo."""
+    DEFAULT_AGE = 29.7  # Média da idade no dataset Titanic
+    DEFAULT_FARE = 32.2  # Média da tarifa no dataset Titanic
+    DEFAULT_EMBARKED = "S"  # Mais comum no dataset
 
 
 class PredictionService:
@@ -60,16 +67,17 @@ class PredictionService:
         Converte os dados em um array NumPy na ordem correta, com encoding.
 
         Args:
-            request_data (PassengerRequest): O objeto Pydantic com os dados de entrada.
+            data (Dict[str, Any]): Dicionário com os dados do passageiro.
 
         Returns:
             np.ndarray: Um array 2D NumPy pronto para o modelo.
         """
 
         try:
-            age = data.get("Age") if data.get("Age") is not None else 0
-            fare = data.get("Fare") if data.get("Fare") is not None else 0
-            embarked = data.get("Embarked") if data.get("Embarked") is not None else "S"
+            # Usar valores padrão baseados em estatísticas do dataset
+            age = data.get("Age") if data.get("Age") is not None else ModelConfig.DEFAULT_AGE
+            fare = data.get("Fare") if data.get("Fare") is not None else ModelConfig.DEFAULT_FARE
+            embarked = data.get("Embarked") if data.get("Embarked") is not None else ModelConfig.DEFAULT_EMBARKED
 
             sex_male = 1 if data.get("Sex") == "male" else 0
 
@@ -87,17 +95,18 @@ class PredictionService:
                 embarked_s,
             ]
 
+            self.logger.debug(f"Feature vector criado: {feature_vector}")
             return np.array([feature_vector])
         except Exception as e:
             self.logger.error(f"ERRO: Falha no pré-processamento dos dados. Causa: {e}")
             raise
 
-    def predict(self, request_data: PassengerRequest) -> float:
+    def predict(self, request_data: Dict[str, Any]) -> float:
         """
         Realiza a predição de sobrevivência com base nos dados da requisição.
 
         Args:
-            request_data (PassengerRequest): Os dados do passageiro validados.
+            request_data (Dict[str, Any]): Os dados do passageiro validados.
 
         Returns:
             float: A probabilidade de sobrevivência (um valor entre 0.0 e 1.0).
@@ -108,12 +117,23 @@ class PredictionService:
                     "Modelo não foi carregado. Não é possível fazer a predição."
                 )
 
+            # Validar se o modelo tem o método predict_proba
+            if not hasattr(self.model, 'predict_proba'):
+                raise RuntimeError(
+                    "Modelo carregado não possui o método predict_proba necessário."
+                )
+
             processed_features = self._preprocess(request_data)
 
             probability_prediction = self.model.predict_proba(processed_features)
 
             survival_probability = probability_prediction[0][1]
 
+            # Validar se a probabilidade está no range esperado
+            if not 0.0 <= survival_probability <= 1.0:
+                self.logger.warning(f"Probabilidade fora do range esperado: {survival_probability}")
+
+            self.logger.info(f"Predição realizada com sucesso: {survival_probability:.4f}")
             return survival_probability
         except Exception as e:
             self.logger.error(f"ERRO: Falha na predição. Causa: {e}")

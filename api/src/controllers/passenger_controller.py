@@ -1,6 +1,6 @@
 from typing import List
 from src.services.predict_service import PredictionService
-from src.models.passeger_request import PassengerRequest
+from src.models.passenger_request import PassengerRequest
 from src.models.prediction_response import PredictionResponse
 from src.repository.passenger_repository import PassengerRepository
 from src.mapper.mapper import map_request_to_dynamodb_item

@@ -1,5 +1,7 @@
-from src.models.passeger_request import PassengerRequest
+from src.models.passenger_request import PassengerRequest
+from src.models.error_response import StandardErrorResponse
 from src.controllers.passenger_controller import PassengerController
+from src.middleware.health_check import HealthCheck
 from src.logging.custom_logging import get_logger
 from src.adapter.http_adapter import HTTPAdapter
 from pydantic import ValidationError
@@ -39,7 +41,12 @@ def lambda_handler(event, _):
                     return http_adapter.build_response(201, passengers_with_survival_probability)
 
             case "GET":
-                if http_adapter.path == "/sobreviventes":
+                if http_adapter.path == "/health":
+                    health_check = HealthCheck()
+                    health_status = health_check.get_overall_health()
+                    status_code = 200 if health_status["overall_status"] == "healthy" else 503
+                    return http_adapter.build_response(status_code, health_status)
+                elif http_adapter.path == "/sobreviventes":
                     passengers = passenger_controller.get_all_passengers()
                     return http_adapter.build_response(200, passengers)
                 elif http_adapter.resource == "/sobreviventes/{id}":
@@ -69,22 +76,15 @@ def lambda_handler(event, _):
 
     except ValidationError as ve:
         logger.error(f"Erro de validação: {str(ve)}")
-        errors = []
-        for error in ve.errors():
-            errors.append({
-                "field": error.get("loc", ["unknown"])[0] if error.get("loc") else "unknown",
-                "message": error.get("msg", "Validation error"),
-                "type": error.get("type", "unknown")
-            })
-        return http_adapter.build_response(422, {
-            "detail": "Validation Error",
-            "errors": errors
-        })
+        error_response = StandardErrorResponse.validation_error(ve.errors())
+        return http_adapter.build_response(error_response.status_code, error_response.model_dump())
 
     except ValueError as ve:
         logger.error(f"Erro de validação: {str(ve)}")
-        return http_adapter.build_response(400, {"error": str(ve)})
+        error_response = StandardErrorResponse.business_error(str(ve))
+        return http_adapter.build_response(error_response.status_code, error_response.model_dump())
 
     except Exception as e:
         logger.error(f"Erro inesperado: {str(e)}")
-        return http_adapter.build_response(500, {"error": str(e)})
+        error_response = StandardErrorResponse.internal_error()
+        return http_adapter.build_response(error_response.status_code, error_response.model_dump())

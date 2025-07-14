@@ -1,6 +1,6 @@
 from typing import Any, Dict
 
-from src.models.passeger_request import PassengerRequest
+from src.models.passenger_request import PassengerRequest
 
 
 def map_request_to_dynamodb_item(passenger_request: PassengerRequest) -> Dict[str, Any]:
