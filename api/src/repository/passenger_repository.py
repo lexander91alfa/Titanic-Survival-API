@@ -106,7 +106,10 @@ class PassengerRepository:
     def delete(self, passenger_id: str) -> bool:
         """Deleta um passageiro pelo ID."""
         try:
-            self.table.delete_item(Key={"passenger_id": passenger_id})
+            result = self.table.delete_item(Key={"passenger_id": passenger_id})
+            if "Attributes" not in result:
+                self.logger.warning(f"Passageiro {passenger_id} não encontrado para exclusão.")
+                return False
             return True
         except boto3.exceptions.Boto3Error as e:
             self.logger.error(

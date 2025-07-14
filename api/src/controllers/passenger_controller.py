@@ -10,7 +10,7 @@ from decimal import Decimal
 
 class PassengerController:
     def __init__(self):
-        self.prediction_service = PredictionService(model_name="model")
+        self.prediction_service = PredictionService(model_name="model_fast", method="pickle")
         self.passenger_repository = PassengerRepository()
         self.logger = get_logger()
 
@@ -73,10 +73,15 @@ class PassengerController:
     def delete_passenger(self, passenger_id: str):
         """Deletes a passenger by ID."""
         try:
-            self.passenger_repository.delete(passenger_id)
-            return {
-                "message": f"Passenger with ID {passenger_id} deleted successfully."
-            }
+            result = self.passenger_repository.delete(passenger_id)
+            if result:
+                return {
+                    "message": f"Passenger with ID {passenger_id} deleted successfully."
+                }
+            else:
+                return {
+                    "message": f"Passenger with ID {passenger_id} not found."
+                }
         except Exception as e:
             self.logger.error(
                 f"Error deleting passenger with ID {passenger_id}: {str(e)}"

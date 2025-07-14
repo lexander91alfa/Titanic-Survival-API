@@ -75,7 +75,13 @@ def lambda_handler(event, _):
                         return http_adapter.build_response(
                             400, {"error": "ID do passageiro é obrigatório"}
                         )
+                    
                     passenger = passenger_controller.get_passenger_by_id(passenger_id)
+                    if not passenger:
+                        return http_adapter.build_response(
+                            404, {"error": "Passageiro não encontrado"}
+                        )
+
                     return http_adapter.build_response(200, passenger)
 
             case "DELETE":
