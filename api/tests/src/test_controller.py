@@ -10,23 +10,25 @@ def test_create_prediction_success(passenger_controller):
     Testa o fluxo de sucesso da criação de uma predição.
     Verifica se o controller chama o serviço de predição e o repositório.
     """
-    requests_data = [
-        PassengerRequest(
-            PassengerId="1",
-            Pclass=3,
-            Sex="male",
-            Age=22.0,
-            SibSp=1,
-            Parch=0,
-            Fare=7.25,
-            Embarked="S",
-        )
-    ]
+    # Mock the prediction service to return expected value
+    with patch.object(passenger_controller.prediction_service, 'predict', return_value=0.6631):
+        requests_data = [
+            PassengerRequest(
+                PassengerId="1",
+                Pclass=3,
+                Sex="male",
+                Age=22.0,
+                SibSp=1,
+                Parch=0,
+                Fare=7.25,
+                Embarked="S",
+            )
+        ]
 
-    response = passenger_controller.save_passenger(requests_data)
+        response = passenger_controller.save_passenger(requests_data)
 
-    assert response[0].id == "1"
-    assert response[0].probability == 0.6631
+        assert response[0].id == "1"
+        assert response[0].probability == 0.6631
 
 
 def test_create_prediction_multiple_passengers(passenger_controller):

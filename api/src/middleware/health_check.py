@@ -32,19 +32,19 @@ class HealthCheck:
             probability = prediction_service.predict(test_data)
 
             return {
-                "status": "saudavel",
+                "status": "healthy",
                 "message": "Modelo funcionando corretamente",
                 "test_probability": round(probability, 4),
             }
         except Exception as e:
-            return {"status": "nao_saudavel", "message": f"Erro no modelo: {str(e)}"}
+            return {"status": "unhealthy", "message": f"Erro no modelo: {str(e)}"}
 
     def check_database_health(self) -> Dict[str, Any]:
         """Verifica se a conexão com o DynamoDB está funcionando."""
         try:
             if AppConfig.is_development():
                 return {
-                    "status": "ignorado",
+                    "status": "skipped",
                     "message": "Verificação de DB pulada em desenvolvimento",
                 }
 
@@ -52,10 +52,10 @@ class HealthCheck:
             # Teste simples de conexão
             repository.get_all()
 
-            return {"status": "saudavel", "message": "Conexão com DynamoDB funcionando"}
+            return {"status": "healthy", "message": "Conexão com DynamoDB funcionando"}
         except Exception as e:
             return {
-                "status": "nao_saudavel",
+                "status": "unhealthy",
                 "message": f"Erro na conexão com DynamoDB: {str(e)}",
             }
 
@@ -64,13 +64,13 @@ class HealthCheck:
         model_health = self.check_model_health()
         db_health = self.check_database_health()
 
-        all_healthy = model_health["status"] == "saudavel" and db_health["status"] in [
-            "saudavel",
-            "ignorado",
+        all_healthy = model_health["status"] == "healthy" and db_health["status"] in [
+            "healthy",
+            "skipped",
         ]
 
         return {
-            "overall_status": "saudavel" if all_healthy else "nao_saudavel",
+            "overall_status": "healthy" if all_healthy else "unhealthy",
             "components": {"model": model_health, "database": db_health},
             "environment": AppConfig.get_environment(),
         }

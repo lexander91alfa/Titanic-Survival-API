@@ -34,7 +34,7 @@ class PassengerController:
                 self.passenger_repository.save(passenger)
 
                 response = PredictionResponse(
-                    id=passenger.get("passenger_id", "desconhecido"),
+                    id=passenger.get("passenger_id", "unknown"),
                     probability=round(float(survival_prob), 4),
                 )
                 result.append(response)
@@ -44,19 +44,19 @@ class PassengerController:
             return result
 
         except ValueError as ve:
-            self.logger.error(f"Erro de validação: {str(ve)}")
-            raise ValueError(f"Erro de validação: {str(ve)}")
+            self.logger.error(f"Validation error: {str(ve)}")
+            raise ValueError(f"Validation error: {str(ve)}")
         except Exception as e:
-            self.logger.error(f"Erro inesperado: {str(e)}")
-            raise Exception(f"Erro inesperado: {str(e)}")
+            self.logger.error(f"Unexpected error: {str(e)}")
+            raise Exception(f"Unexpected error: {str(e)}")
 
     def get_all_passengers(self, page: int = 1, limit: int = 10):
         """Retrieves all passengers from the repository with pagination."""
         try:
             return self.passenger_repository.get_all(page=page, limit=limit)
         except Exception as e:
-            self.logger.error(f"Erro ao recuperar passageiros: {str(e)}")
-            raise Exception(f"Erro ao recuperar passageiros: {str(e)}")
+            self.logger.error(f"Error retrieving passengers: {str(e)}")
+            raise Exception(f"Error retrieving passengers: {str(e)}")
 
     def get_passenger_by_id(self, passenger_id: str):
         """Retrieves a passenger by ID."""
@@ -64,10 +64,10 @@ class PassengerController:
             return self.passenger_repository.get_by_id(passenger_id)
         except Exception as e:
             self.logger.error(
-                f"Erro ao recuperar passageiro com ID {passenger_id}: {str(e)}"
+                f"Error retrieving passenger with ID {passenger_id}: {str(e)}"
             )
             raise Exception(
-                f"Erro ao recuperar passageiro com ID {passenger_id}: {str(e)}"
+                f"Error retrieving passenger with ID {passenger_id}: {str(e)}"
             )
 
     def delete_passenger(self, passenger_id: str):
@@ -76,16 +76,16 @@ class PassengerController:
             result = self.passenger_repository.delete(passenger_id)
             if result:
                 return {
-                    "message": f"Passageiro com ID {passenger_id} deletado com sucesso."
+                    "message": f"Passenger with ID {passenger_id} deleted successfully."
                 }
             else:
                 return {
-                    "message": f"Passageiro com ID {passenger_id} não encontrado."
+                    "message": f"Passenger with ID {passenger_id} not found."
                 }
         except Exception as e:
             self.logger.error(
-                f"Erro ao deletar passageiro com ID {passenger_id}: {str(e)}"
+                f"Error deleting passenger with ID {passenger_id}: {str(e)}"
             )
             raise Exception(
-                f"Erro ao deletar passageiro com ID {passenger_id}: {str(e)}"
+                f"Error deleting passenger with ID {passenger_id}: {str(e)}"
             )

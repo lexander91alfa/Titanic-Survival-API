@@ -51,7 +51,7 @@ def lambda_handler(event, _):
                     health_check = HealthCheck()
                     health_status = health_check.get_overall_health()
                     status_code = (
-                        200 if health_status["overall_status"] == "saudavel" else 503
+                        200 if health_status["overall_status"] == "healthy" else 503
                     )
                     return http_adapter.build_response(status_code, health_status)
                 elif http_adapter.path == "/sobreviventes":
@@ -68,6 +68,11 @@ def lambda_handler(event, _):
                             passengers = passenger_controller.get_all_passengers()
                     else:
                         passengers = passenger_controller.get_all_passengers()
+
+                    if passengers.get("items") is None:
+                        return http_adapter.build_response(
+                            404, {"error": "Nenhum passageiro encontrado"}
+                        )
 
                     return http_adapter.build_response(200, passengers)
                 elif http_adapter.resource == "/sobreviventes/{id}":

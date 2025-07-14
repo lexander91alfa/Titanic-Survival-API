@@ -151,11 +151,17 @@ class TestLambdaHandler:
 
     def test_handler_get_all_passengers(self, passenger_repository):
         """Testa GET para todos os passageiros."""
-        # Configure the mocked passenger controller
-        self.mock_passenger_controller.get_all_passengers.return_value = [
-            {"passenger_id": "1", "survival_probability": 0.8},
-            {"passenger_id": "2", "survival_probability": 0.3},
-        ]
+        # Configure the mocked passenger controller to return dictionary structure like repository
+        self.mock_passenger_controller.get_all_passengers.return_value = {
+            "items": [
+                {"passenger_id": "1", "survival_probability": 0.8},
+                {"passenger_id": "2", "survival_probability": 0.3},
+            ],
+            "page": 1,
+            "limit": 10,
+            "total_pages": 1,
+            "count": 2
+        }
         
         test_event = {
             "httpMethod": "GET",
@@ -166,7 +172,8 @@ class TestLambdaHandler:
 
         assert response["statusCode"] == 200
         body = json.loads(response["body"])
-        assert len(body) == 2
+        assert "items" in body
+        assert len(body["items"]) == 2
 
     def test_handler_get_passenger_by_id(self, passenger_repository):
         """Testa GET para um passageiro específico."""

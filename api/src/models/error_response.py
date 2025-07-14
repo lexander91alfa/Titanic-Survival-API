@@ -26,12 +26,12 @@ class StandardErrorResponse(BaseModel):
             error_details.append(
                 ErrorDetail(
                     field=(
-                        error.get("loc", ["desconhecido"])[0]
+                        error.get("loc", ["unknown"])[0]
                         if error.get("loc")
-                        else "desconhecido"
+                        else "unknown"
                     ),
                     message=error.get("msg", "Erro de validação"),
-                    type=error.get("type", "desconhecido"),
+                    type=error.get("type", "unknown"),
                 )
             )
 
