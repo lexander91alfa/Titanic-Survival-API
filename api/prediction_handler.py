@@ -56,19 +56,13 @@ def lambda_handler(event, _):
                         query_params = http_adapter.query_parameters
                         page = query_params.get("page")
                         limit = query_params.get("limit")
-                        if page:
-                            page = int(page)
+                        
+                        if page is not None and limit is not None:
+                            passengers = passenger_controller.get_all_passengers(
+                                page=page, limit=limit
+                            )
                         else:
-                            page = 1
-
-                        if limit:
-                            limit = int(limit)
-                        else:
-                            limit = 10
-
-                        passengers = passenger_controller.get_all_passengers(
-                            page=page, limit=limit
-                        )
+                            passengers = passenger_controller.get_all_passengers()
                     else:
                         passengers = passenger_controller.get_all_passengers()
                     return http_adapter.build_response(200, passengers)

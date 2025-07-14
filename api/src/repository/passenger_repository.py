@@ -86,9 +86,7 @@ class PassengerRepository:
 
             response = self.table.scan(**scan_kwargs)
 
-            # Conta total de itens para calcular total de páginas
-            total_count_response = self.table.scan(Select="COUNT")
-            total_count = total_count_response.get("Count", 0)
+            total_count = self.table.item_count
             total_pages = (total_count + limit - 1) // limit  # Arredonda para cima
 
             return {

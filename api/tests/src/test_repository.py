@@ -22,17 +22,18 @@ def test_get_all_passengers(passenger_repository):
     """
     Testa se o repositório lista todos os itens corretamente.
     """
-    item1 = {"passenger_id": "id1", "probability": "0.1"}
-    item2 = {"passenger_id": "id2", "probability": "0.2"}
 
-    passenger_repository.save(item1)
-    passenger_repository.save(item2)
+    for i in range(12):
+        passenger_repository.save({
+            "passenger_id": f"test-id-{i}",
+            "probability": str(i * 0.1),
+            "input_data": {"Age": i + 20},
+        })
+    
 
     all_items = passenger_repository.get_all()
 
-    assert len(all_items) == 2
-    assert "id1" in [item["passenger_id"] for item in all_items]
-    assert "id2" in [item["passenger_id"] for item in all_items]
+    assert len(all_items.get("items", [])) == 10
 
 
 def test_delete_passenger(passenger_repository):
