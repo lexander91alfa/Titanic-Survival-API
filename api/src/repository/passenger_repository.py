@@ -15,7 +15,7 @@ class PassengerRepository:
         self.logger = get_logger()
         table_name = getenv("DYNAMODB_TABLE_NAME")
         if not table_name:
-            raise ValueError("DYNAMODB_TABLE_NAME environment variable is not set.")
+            raise ValueError("Variável de ambiente DYNAMODB_TABLE_NAME não está definida.")
         self.table = self.dynamodb.Table(table_name)
 
     def save(self, passenger_data: Dict[str, Any]) -> None:

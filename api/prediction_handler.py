@@ -51,7 +51,7 @@ def lambda_handler(event, _):
                     health_check = HealthCheck()
                     health_status = health_check.get_overall_health()
                     status_code = (
-                        200 if health_status["overall_status"] == "healthy" else 503
+                        200 if health_status["overall_status"] == "saudavel" else 503
                     )
                     return http_adapter.build_response(status_code, health_status)
                 elif http_adapter.path == "/sobreviventes":
@@ -68,6 +68,7 @@ def lambda_handler(event, _):
                             passengers = passenger_controller.get_all_passengers()
                     else:
                         passengers = passenger_controller.get_all_passengers()
+
                     return http_adapter.build_response(200, passengers)
                 elif http_adapter.resource == "/sobreviventes/{id}":
                     passenger_id = http_adapter.path_parameters.get("id")
@@ -101,9 +102,9 @@ def lambda_handler(event, _):
                     )
 
             case _:
-                return http_adapter.build_response(
-                    405, {"error": "Método HTTP não permitido"}
-                )
+                    return http_adapter.build_response(
+                        405, {"error": "Método HTTP não permitido"}
+                    )
 
     except ValidationError as ve:
         logger.error(f"Erro de validação: {str(ve)}")
