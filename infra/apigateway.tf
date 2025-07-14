@@ -25,6 +25,14 @@ resource "aws_api_gateway_resource" "sobrevivente_id" {
   depends_on = [aws_api_gateway_resource.sobreviventes]
 }
 
+resource "aws_api_gateway_resource" "health" {
+  parent_id   = aws_api_gateway_rest_api.titanic_api.root_resource_id
+  path_part   = "health"
+  rest_api_id = aws_api_gateway_rest_api.titanic_api.id
+
+  depends_on = [aws_api_gateway_rest_api.titanic_api]
+}
+
 # ===================================================================
 # 3. Métodos HTTP e Integração com a Lambda
 # ===================================================================
@@ -112,6 +120,27 @@ resource "aws_api_gateway_integration" "delete_sobrevivente_lambda" {
   depends_on = [aws_api_gateway_method.delete_sobrevivente, aws_lambda_function.prediction]
 }
 
+resource "aws_api_gateway_method" "get_health" {
+  rest_api_id    = aws_api_gateway_rest_api.titanic_api.id
+  resource_id    = aws_api_gateway_resource.health.id
+  http_method    = "GET"
+  authorization  = "NONE"
+  api_key_required = false
+
+  depends_on = [aws_api_gateway_resource.health]
+}
+
+resource "aws_api_gateway_integration" "get_health_lambda" {
+  rest_api_id             = aws_api_gateway_rest_api.titanic_api.id
+  resource_id             = aws_api_gateway_resource.health.id
+  http_method             = aws_api_gateway_method.get_health.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.prediction.invoke_arn
+
+  depends_on = [aws_api_gateway_method.get_health, aws_lambda_function.prediction]
+}
+
 # ===================================================================
 # 4. Deploy da API
 # ===================================================================
@@ -123,14 +152,17 @@ resource "aws_api_gateway_deployment" "api_deployment" {
       [
         aws_api_gateway_resource.sobreviventes.id,
         aws_api_gateway_resource.sobrevivente_id.id,
+        aws_api_gateway_resource.health.id,
         aws_api_gateway_method.post_sobreviventes.id,
         aws_api_gateway_method.get_all_sobreviventes.id,
         aws_api_gateway_method.get_one_sobrevivente.id,
         aws_api_gateway_method.delete_sobrevivente.id,
+        aws_api_gateway_method.get_health.id,
         aws_api_gateway_integration.post_sobreviventes_lambda.id,
         aws_api_gateway_integration.get_all_sobreviventes_lambda.id,
         aws_api_gateway_integration.get_one_sobrevivente_lambda.id,
         aws_api_gateway_integration.delete_sobrevivente_lambda.id,
+        aws_api_gateway_integration.get_health_lambda.id,
       ]
     ))
   }
@@ -143,7 +175,8 @@ resource "aws_api_gateway_deployment" "api_deployment" {
     aws_api_gateway_integration.post_sobreviventes_lambda,
     aws_api_gateway_integration.get_all_sobreviventes_lambda,
     aws_api_gateway_integration.get_one_sobrevivente_lambda,
-    aws_api_gateway_integration.delete_sobrevivente_lambda
+    aws_api_gateway_integration.delete_sobrevivente_lambda,
+    aws_api_gateway_integration.get_health_lambda
   ]
 }
 
