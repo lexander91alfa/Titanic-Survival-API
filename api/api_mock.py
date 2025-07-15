@@ -1,5 +1,6 @@
 import os
 import sys
+import boto3
 import atexit
 from typing import Optional
 from contextlib import contextmanager
@@ -87,6 +88,7 @@ class MockServerManager:
 def create_flask_app() -> Flask:
     """Factory function para criar a aplicação Flask"""
     from prediction_handler import lambda_handler
+    client = boto3.client('dynamodb')
     app = Flask(__name__)
     
     @app.route("/sobreviventes", methods=["POST"])
@@ -107,9 +109,17 @@ def create_flask_app() -> Flask:
     @app.route("/health", methods=["GET"])
     def health_check():
         """Endpoint de health check"""
+
+        item = client.get_item(
+            TableName='passengers',
+            Key={
+                'passenger_id': {'S': '1'}
+            }
+        )
         return jsonify({
             "status": "OK",
             "service": "Titanic Survival API Mock",
+            "body": item,
             "environment": "development"
         }), 200
 

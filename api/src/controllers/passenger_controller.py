@@ -27,10 +27,6 @@ class PassengerController:
                 passenger = map_request_to_dynamodb_item(passenger_request)
                 survival_prob = self.prediction_service.predict(passenger)
 
-                for key, value in passenger.items():
-                    if isinstance(value, float):
-                        passenger[key] = Decimal(str(value))
-
                 passenger["survival_probability"] = Decimal(str(survival_prob))
 
                 self.passenger_repository.save(passenger)
