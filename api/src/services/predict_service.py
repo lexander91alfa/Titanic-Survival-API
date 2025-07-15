@@ -206,6 +206,14 @@ class PredictionService:
             float: A probabilidade de sobrevivência (um valor entre 0.0 e 1.0).
         """
         try:
+            # Verificar se o modelo foi carregado
+            if self.model is None:
+                raise RuntimeError("Modelo não foi carregado. Verifique se o arquivo do modelo existe.")
+            
+            # Verificar se o modelo tem o método predict_proba
+            if not hasattr(self.model, 'predict_proba'):
+                raise RuntimeError("O modelo não possui o método predict_proba necessário.")
+            
             processed_features = self._preprocess(request_data)
 
             probability_prediction = self.model.predict_proba(processed_features)

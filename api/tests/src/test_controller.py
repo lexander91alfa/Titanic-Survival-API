@@ -1,5 +1,6 @@
 from src.models.passenger_request import PassengerRequest
 from src.models.prediction_response import PredictionResponse
+from src.models.api_response import PredictionResult, DeleteResponse
 from unittest.mock import MagicMock, patch
 import pytest
 from decimal import Decimal
@@ -27,44 +28,54 @@ def test_create_prediction_success(passenger_controller):
 
         response = passenger_controller.save_passenger(requests_data)
 
-        assert response[0].id == "1"
-        assert response[0].probability == 0.6631
+        assert len(response) == 1
+        assert isinstance(response[0], PredictionResult)
+        assert response[0].passenger_id == "1"
+        assert response[0].survival_probability == 0.6631
+        assert response[0].prediction == "survived"  # 0.6631 > 0.5
+        assert response[0].confidence_level in ["low", "medium", "high"]
 
 
 def test_create_prediction_multiple_passengers(passenger_controller):
     """
     Testa a criação de predições para múltiplos passageiros.
     """
-    requests_data = [
-        PassengerRequest(
-            PassengerId="1",
-            Pclass=3,
-            Sex="male",
-            Age=22.0,
-            SibSp=1,
-            Parch=0,
-            Fare=7.25,
-            Embarked="S",
-        ),
-        PassengerRequest(
-            PassengerId="2",
-            Pclass=1,
-            Sex="female",
-            Age=25.0,
-            SibSp=0,
-            Parch=1,
-            Fare=80.0,
-            Embarked="C",
-        ),
-    ]
+    # Mock the prediction service to return different values for each passenger
+    with patch.object(passenger_controller.prediction_service, 'predict', side_effect=[0.6631, 0.8543]):
+        requests_data = [
+            PassengerRequest(
+                PassengerId="1",
+                Pclass=3,
+                Sex="male",
+                Age=22.0,
+                SibSp=1,
+                Parch=0,
+                Fare=7.25,
+                Embarked="S",
+            ),
+            PassengerRequest(
+                PassengerId="2",
+                Pclass=1,
+                Sex="female",
+                Age=25.0,
+                SibSp=0,
+                Parch=1,
+                Fare=80.0,
+                Embarked="C",
+            ),
+        ]
 
-    response = passenger_controller.save_passenger(requests_data)
+        response = passenger_controller.save_passenger(requests_data)
 
-    assert len(response) == 2
-    assert response[0].id == "1"
-    assert response[1].id == "2"
-    assert isinstance(response[0].probability, float)
-    assert isinstance(response[1].probability, float)
+        assert len(response) == 2
+        assert isinstance(response[0], PredictionResult)
+        assert isinstance(response[1], PredictionResult)
+        assert response[0].passenger_id == "1"
+        assert response[1].passenger_id == "2"
+        assert response[0].survival_probability == 0.6631
+        assert response[1].survival_probability == 0.8543
+        assert response[0].prediction == "survived"
+        assert response[1].prediction == "survived"
 
 
 def test_create_prediction_validation_error(passenger_controller):
@@ -125,8 +136,8 @@ def test_get_all_passengers_success(passenger_controller):
     """
     # Mock do repositório para retornar dados de teste
     mock_passengers = [
-        {"passenger_id": "1", "survival_probability": 0.3032},
-        {"passenger_id": "2", "survival_probability": 0.7245},
+        {"passenger_id": "1", "survival_probability": 0.3032, "pclass": 3, "sex": "male", "age": 22, "sibsp": 0, "parch": 0, "fare": 7.25, "embarked": "S"},
+        {"passenger_id": "2", "survival_probability": 0.7245, "pclass": 1, "sex": "female", "age": 28, "sibsp": 1, "parch": 0, "fare": 80.0, "embarked": "C"},
     ]
     passenger_controller.passenger_repository.get_all = MagicMock(
         return_value=mock_passengers
@@ -134,9 +145,11 @@ def test_get_all_passengers_success(passenger_controller):
 
     response = passenger_controller.get_all_passengers()
 
-    assert len(response) == 2
-    assert response[0]["passenger_id"] == "1"
-    assert response[1]["passenger_id"] == "2"
+    assert "items" in response
+    assert "pagination" in response
+    assert len(response["items"]) == 2
+    assert response["items"][0]["passenger_id"] == "1"
+    assert response["items"][1]["passenger_id"] == "2"
     passenger_controller.passenger_repository.get_all.assert_called_once()
 
 
@@ -192,11 +205,14 @@ def test_delete_passenger_success(passenger_controller):
     Testa a exclusão bem-sucedida de um passageiro.
     """
     # Mock do repositório para simular exclusão bem-sucedida
-    passenger_controller.passenger_repository.delete = MagicMock()
+    passenger_controller.passenger_repository.delete = MagicMock(return_value=True)
 
     response = passenger_controller.delete_passenger("1")
 
-    assert response["message"] == "Passageiro com ID 1 excluído com sucesso."
+    assert isinstance(response, DeleteResponse)
+    assert response.deleted is True
+    assert response.passenger_id == "1"
+    assert "excluído com sucesso" in response.message
     passenger_controller.passenger_repository.delete.assert_called_once_with("1")
 
 
@@ -249,8 +265,8 @@ class TestPassengerControllerAdvanced:
 
                 # Verificar resposta
                 assert len(response) == 1
-                assert response[0].id == "test_decimal"
-                assert response[0].probability == 0.8542
+                assert response[0].passenger_id == "test_decimal"
+                assert response[0].survival_probability == 0.8542
 
     def test_save_passenger_returns_prediction_response_objects(
         self, passenger_controller
@@ -274,10 +290,10 @@ class TestPassengerControllerAdvanced:
 
             response = passenger_controller.save_passenger(requests_data)
 
-            assert len(response) == 1
-            assert isinstance(response[0], PredictionResponse)
-            assert response[0].id == "response_test"
-            assert response[0].probability == 0.75
+        assert len(response) == 1
+        assert isinstance(response[0], PredictionResult)
+        assert response[0].passenger_id == "response_test"
+        assert response[0].survival_probability == 0.75
 
     def test_save_passenger_probability_rounding(self, passenger_controller):
         """Testa se a probabilidade é arredondada para 4 casas decimais."""
@@ -299,15 +315,15 @@ class TestPassengerControllerAdvanced:
 
             response = passenger_controller.save_passenger(requests_data)
 
-            assert response[0].probability == 0.1235  # Arredondado para 4 casas
+            assert response[0].survival_probability == 0.1235  # Arredondado para 4 casas
 
     def test_get_all_passengers_empty_list(self, passenger_controller):
         """Testa get_all_passengers quando não há passageiros."""
         with patch.object(
             passenger_controller.passenger_repository, "get_all", return_value=[]
-        ):
-            result = passenger_controller.get_all_passengers()
-            assert result == []
+        ):        result = passenger_controller.get_all_passengers()
+        assert result["items"] == []
+        assert result["pagination"]["total_items"] == 0
 
     def test_get_passenger_by_id_not_found(self, passenger_controller):
         """Testa get_passenger_by_id quando passageiro não é encontrado."""
@@ -319,10 +335,9 @@ class TestPassengerControllerAdvanced:
 
     def test_delete_passenger_success_message(self, passenger_controller):
         """Testa se delete_passenger retorna mensagem de sucesso correta."""
-        with patch.object(passenger_controller.passenger_repository, "delete"):
-            result = passenger_controller.delete_passenger("test_id")
-            expected_message = "Passageiro com ID test_id excluído com sucesso."
-            assert result["message"] == expected_message
+        with patch.object(passenger_controller.passenger_repository, "delete"):        result = passenger_controller.delete_passenger("test_id")
+        expected_message = "Passageiro com ID test_id excluído com sucesso."
+        assert result.message == expected_message
 
     def test_error_logging(self, passenger_controller):
         """Testa se erros são logados corretamente."""
@@ -373,5 +388,5 @@ class TestPassengerControllerAdvanced:
 
                 response = passenger_controller.save_passenger(requests_data)
 
-                mock_mapper.assert_called_once()
-                assert response[0].id == "mapper_test"
+            mock_mapper.assert_called_once()
+            assert response[0].passenger_id == "mapper_test"
