@@ -76,11 +76,13 @@ class PassengerController:
             result = self.passenger_repository.delete(passenger_id)
             if result:
                 return {
-                    "message": f"Passageiro com ID {passenger_id} excluído com sucesso."
+                    "message": f"Passageiro com ID {passenger_id} excluído com sucesso.",
+                    "status_code": 200
                 }
             else:
                 return {
-                    "message": f"Passageiro com ID {passenger_id} não encontrado."
+                    "message": f"Passageiro com ID {passenger_id} não encontrado.",
+                    "status_code": 404,
                 }
         except Exception as e:
             self.logger.error(

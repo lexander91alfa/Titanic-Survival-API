@@ -65,7 +65,7 @@ def mock_get_all_passengers_event():
 def mock_get_passenger_by_id_event(passenger_id):
     return {
         "body": None,
-        "resource": f"/sobreviventes/{passenger_id}",
+        "resource": "/sobreviventes/{id}",
         "path": f"/sobreviventes/{passenger_id}",
         "httpMethod": "GET",
         "isBase64Encoded": False,

@@ -74,7 +74,6 @@ def lambda_handler(event, _):
                     else:
                         return http_adapter.build_response(404, {"error": "Nenhum passageiro encontrado"})
 
-                    return http_adapter.build_response(200, passengers)
                 elif http_adapter.resource == "/sobreviventes/{id}":
                     passenger_id = http_adapter.path_parameters.get("id")
                     if not passenger_id:
@@ -87,6 +86,7 @@ def lambda_handler(event, _):
                         return http_adapter.build_response(
                             404, {"error": "Passageiro não encontrado"}
                         )
+                    
                     return http_adapter.build_response(200, passenger)
 
             case "DELETE":
@@ -99,7 +99,7 @@ def lambda_handler(event, _):
                         )
 
                     result = passenger_controller.delete_passenger(passenger_id)
-                    return http_adapter.build_response(200, result)
+                    return http_adapter.build_response(result.get("status_code", 500), {"message": result.get("message", "Erro ao deletar passageiro")})
                 else:
                     return http_adapter.build_response(
                         400,

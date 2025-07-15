@@ -106,11 +106,18 @@ class PassengerRepository:
     def delete(self, passenger_id: str) -> bool:
         """Deleta um passageiro pelo ID."""
         try:
-            result = self.table.delete_item(Key={"passenger_id": passenger_id})
+            result = self.table.delete_item(
+                Key={"passenger_id": passenger_id},
+                ConditionExpression="attribute_exists(passenger_id)",
+                ReturnValues="ALL_OLD"
+            )
             if "Attributes" not in result:
                 self.logger.warning(f"Passageiro {passenger_id} não encontrado para exclusão.")
                 return False
             return True
+        except self.dynamodb.meta.client.exceptions.ConditionalCheckFailedException:
+            self.logger.warning(f"Passageiro {passenger_id} não encontrado para exclusão.")
+            return False
         except boto3.exceptions.Boto3Error as e:
             self.logger.error(
                 f"Erro do boto3 ao deletar passageiro {passenger_id}: {e}"
