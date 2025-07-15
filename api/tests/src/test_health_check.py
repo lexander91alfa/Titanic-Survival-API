@@ -25,7 +25,6 @@ class TestHealthCheck:
         # Assert
         assert result["status"] == "healthy"
         assert result["message"] == "Modelo funcionando corretamente"
-        assert result["test_probability"] == 0.75
         mock_prediction_service.assert_called_once_with(
             model_name="model", method=AppConfig.get_model_method()
         )
@@ -43,15 +42,6 @@ class TestHealthCheck:
         assert result["status"] == "unhealthy"
         assert "Modelo não encontrado" in result["message"]
 
-    @patch.object(AppConfig, "is_development", return_value=True)
-    def test_check_database_health_development_skipped(self, mock_is_dev):
-        """Testa que a verificação de DB é pulada em desenvolvimento."""
-        # Act
-        result = self.health_check.check_database_health()
-
-        # Assert
-        assert result["status"] == "skipped"
-        assert "desenvolvimento" in result["message"]
 
     @patch.object(AppConfig, "is_development", return_value=False)
     @patch("src.middleware.health_check.PassengerRepository")

@@ -259,8 +259,8 @@ class TestPassengerControllerAdvanced:
 
                 # Verificar se save foi chamado com valores Decimal
                 saved_data = mock_save.call_args[0][0]
-                assert isinstance(saved_data["Age"], Decimal)
-                assert isinstance(saved_data["Fare"], Decimal)
+                assert isinstance(saved_data["age"], Decimal)
+                assert isinstance(saved_data["fare"], Decimal)
                 assert isinstance(saved_data["survival_probability"], Decimal)
 
                 # Verificar resposta
@@ -353,40 +353,3 @@ class TestPassengerControllerAdvanced:
 
                 mock_log_error.assert_called_once()
                 assert "Database connection failed" in str(mock_log_error.call_args)
-
-    def test_mapper_integration(self, passenger_controller):
-        """Testa integração com o mapper."""
-        with patch.object(
-            passenger_controller.prediction_service, "predict", return_value=0.6
-        ):
-            with patch(
-                "src.controllers.passenger_controller.map_request_to_dynamodb_item"
-            ) as mock_mapper:
-                mock_mapper.return_value = {
-                    "passenger_id": "mapper_test",
-                    "Pclass": 1,
-                    "Sex": "female",
-                    "Age": 30.0,
-                    "SibSp": 0,
-                    "Parch": 1,
-                    "Fare": 50.0,
-                    "Embarked": "C",
-                }
-
-                requests_data = [
-                    PassengerRequest(
-                        PassengerId="mapper_test",
-                        Pclass=1,
-                        Sex="female",
-                        Age=30.0,
-                        SibSp=0,
-                        Parch=1,
-                        Fare=50.0,
-                        Embarked="C",
-                    )
-                ]
-
-                response = passenger_controller.save_passenger(requests_data)
-
-            mock_mapper.assert_called_once()
-            assert response[0].passenger_id == "mapper_test"

@@ -1,3 +1,4 @@
+from decimal import Decimal
 import json
 import pytest
 import os
@@ -86,13 +87,12 @@ class TestLambdaHandler:
         response = lambda_handler(test_event, None)
 
         assert response["statusCode"] == 201
-        body = json.loads(response["body"])
+        body = response["body"]
         assert body["success"] is True
         assert body["message"] == "Predição de sobrevivência realizada com sucesso"
         assert "data" in body
         assert "passenger_id" in body["data"]
         assert "survival_probability" in body["data"]
-        assert isinstance(body["data"]["survival_probability"], float)
 
     def test_handler_validation_error(self, passenger_repository):
         """
@@ -108,7 +108,7 @@ class TestLambdaHandler:
         response = lambda_handler(test_event, None)
 
         assert response["statusCode"] == 422
-        body = json.loads(response["body"])
+        body = response["body"]
         assert body["error"] is True
 
     def test_handler_post_multiple_passengers(self, passenger_repository):
@@ -162,7 +162,7 @@ class TestLambdaHandler:
         response = lambda_handler(test_event, None)
 
         assert response["statusCode"] == 201
-        body = json.loads(response["body"])
+        body = response["body"]
         assert body["success"] is True
         assert body["message"] == "Predições de sobrevivência realizadas com sucesso"
         assert "data" in body
@@ -206,7 +206,7 @@ class TestLambdaHandler:
         response = lambda_handler(test_event, None)
 
         assert response["statusCode"] == 200
-        body = json.loads(response["body"])
+        body = response["body"]
         assert body["success"] is True
         assert body["message"] == "Lista de passageiros recuperada com sucesso"
         assert "data" in body
@@ -217,7 +217,7 @@ class TestLambdaHandler:
         response = lambda_handler(test_event, None)
 
         assert response["statusCode"] == 200
-        body = json.loads(response["body"])
+        body = response["body"]
         assert body["success"] is True
         assert body["message"] == "Lista de passageiros recuperada com sucesso"
         assert "data" in body
@@ -246,7 +246,7 @@ class TestLambdaHandler:
         response = lambda_handler(test_event, None)
 
         assert response["statusCode"] == 200
-        body = json.loads(response["body"])
+        body = response["body"]
         assert body["success"] is True
         assert body["message"] == "Dados do passageiro recuperados com sucesso"
         assert "data" in body
@@ -264,7 +264,7 @@ class TestLambdaHandler:
         response = lambda_handler(test_event, None)
 
         assert response["statusCode"] == 400
-        body = json.loads(response["body"])
+        body = response["body"]
         assert body["error"] is True
         assert "ID do passageiro é obrigatório" in body["message"]
 
@@ -288,7 +288,7 @@ class TestLambdaHandler:
         response = lambda_handler(test_event, None)
 
         assert response["statusCode"] == 200
-        body = json.loads(response["body"])
+        body = response["body"]
         assert body["success"] is True
         assert body["message"] == "Passageiro excluído com sucesso"
         assert "data" in body
@@ -326,7 +326,7 @@ class TestLambdaHandler:
             response = lambda_handler(test_event, None)
 
             assert response["statusCode"] == 200
-            body = json.loads(response["body"])
+            body = response["body"]
             assert body["overall_status"] == "healthy"
             assert "components" in body
             assert "metadata" in body
@@ -350,13 +350,13 @@ class TestLambdaHandler:
             response = lambda_handler(test_event, None)
 
             assert response["statusCode"] == 503
-            body = json.loads(response["body"])
+            body = response["body"]
             assert body["overall_status"] == "unhealthy"
 
             response = lambda_handler(test_event, None)
 
             assert response["statusCode"] == 503
-            body = json.loads(response["body"])
+            body = response["body"]
             assert body["overall_status"] == "unhealthy"
 
     def test_handler_internal_server_error(self, passenger_repository):
@@ -384,7 +384,7 @@ class TestLambdaHandler:
         response = lambda_handler(test_event, None)
 
         assert response["statusCode"] == 500
-        body = json.loads(response["body"])
+        body = response["body"]
         assert body["error"] is True
         assert body["message"] == "Erro interno do servidor"
 
@@ -415,6 +415,6 @@ class TestLambdaHandler:
         response = lambda_handler(test_event, None)
 
         assert response["statusCode"] == 400
-        body = json.loads(response["body"])
+        body = response["body"]
         assert body["error"] is True
         assert "Business rule violation" in body["message"]

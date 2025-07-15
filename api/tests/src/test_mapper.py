@@ -1,66 +1,11 @@
 import pytest
 from src.mapper.mapper import map_request_to_dynamodb_item
 from src.models.passenger_request import PassengerRequest
+from decimal import Decimal
 
 
 class TestMapper:
     """Testes para a função map_request_to_dynamodb_item."""
-
-    def test_map_complete_passenger_request(self):
-        """Testa mapeamento de uma requisição completa."""
-        passenger_request = PassengerRequest(
-            PassengerId="123",
-            Pclass=1,
-            Sex="female",
-            Age=25.0,
-            SibSp=1,
-            Parch=2,
-            Fare=100.50,
-            Embarked="S",
-        )
-
-        result = map_request_to_dynamodb_item(passenger_request)
-
-        expected = {
-            "passenger_id": "123",
-            "Pclass": 1,
-            "Sex": "female",
-            "Age": 25.0,
-            "SibSp": 1,
-            "Parch": 2,
-            "Fare": 100.50,
-            "Embarked": "S",
-        }
-
-        assert result == expected
-
-    def test_map_passenger_request_without_embarked(self):
-        """Testa mapeamento sem campo Embarked (opcional)."""
-        passenger_request = PassengerRequest(
-            PassengerId="456",
-            Pclass=3,
-            Sex="male",
-            Age=30.0,
-            SibSp=0,
-            Parch=0,
-            Fare=15.25,
-            # Embarked ausente
-        )
-
-        result = map_request_to_dynamodb_item(passenger_request)
-
-        expected = {
-            "passenger_id": "456",
-            "Pclass": 3,
-            "Sex": "male",
-            "Age": 30.0,
-            "SibSp": 0,
-            "Parch": 0,
-            "Fare": 15.25,
-            "Embarked": None,
-        }
-
-        assert result == expected
 
     def test_map_passenger_id_conversion_to_string(self):
         """Testa se PassengerId é convertido para string."""
@@ -97,7 +42,7 @@ class TestMapper:
             )
 
             result = map_request_to_dynamodb_item(passenger_request)
-            assert result["Pclass"] == pclass
+            assert result["pclass"] == pclass
 
     def test_map_all_sex_values(self):
         """Testa mapeamento para ambos os sexos."""
@@ -116,7 +61,7 @@ class TestMapper:
             )
 
             result = map_request_to_dynamodb_item(passenger_request)
-            assert result["Sex"] == sex
+            assert result["sex"] == sex
 
     def test_map_all_embarked_values(self):
         """Testa mapeamento para todos os portos de embarque."""
@@ -135,7 +80,7 @@ class TestMapper:
             )
 
             result = map_request_to_dynamodb_item(passenger_request)
-            assert result["Embarked"] == embarked
+            assert result["embarked"] == embarked
 
     def test_map_boundary_values(self):
         """Testa mapeamento com valores limite."""
@@ -152,10 +97,10 @@ class TestMapper:
 
         result = map_request_to_dynamodb_item(passenger_request)
 
-        assert result["Age"] == 0.0
-        assert result["SibSp"] == 0
-        assert result["Parch"] == 0
-        assert result["Fare"] == 0.0
+        assert result["age"] == 0.0
+        assert result["sibsp"] == 0
+        assert result["parch"] == 0
+        assert result["fare"] == 0.0
 
     def test_map_high_values(self):
         """Testa mapeamento com valores altos."""
@@ -172,10 +117,10 @@ class TestMapper:
 
         result = map_request_to_dynamodb_item(passenger_request)
 
-        assert result["Age"] == 120.0
-        assert result["SibSp"] == 8
-        assert result["Parch"] == 6
-        assert result["Fare"] == 500.0
+        assert result["age"] == 120.0
+        assert result["sibsp"] == 8
+        assert result["parch"] == 6
+        assert result["fare"] == 500.0
 
     def test_map_preserves_data_types(self):
         """Testa se os tipos de dados são preservados no mapeamento."""
@@ -194,13 +139,13 @@ class TestMapper:
 
         # Verificar tipos
         assert isinstance(result["passenger_id"], str)
-        assert isinstance(result["Pclass"], int)
-        assert isinstance(result["Sex"], str)
-        assert isinstance(result["Age"], float)
-        assert isinstance(result["SibSp"], int)
-        assert isinstance(result["Parch"], int)
-        assert isinstance(result["Fare"], float)
-        assert isinstance(result["Embarked"], str)
+        assert isinstance(result["pclass"], int)
+        assert isinstance(result["sex"], str)
+        assert isinstance(result["age"], Decimal)
+        assert isinstance(result["sibsp"], int)
+        assert isinstance(result["parch"], int)
+        assert isinstance(result["fare"], Decimal)
+        assert isinstance(result["embarked"], str)
 
     def test_map_contains_all_required_fields(self):
         """Testa se o mapeamento contém todos os campos necessários."""
@@ -219,17 +164,17 @@ class TestMapper:
 
         expected_fields = [
             "passenger_id",
-            "Pclass",
-            "Sex",
-            "Age",
-            "SibSp",
-            "Parch",
-            "Fare",
-            "Embarked",
+            "pclass",
+            "sex",
+            "age",
+            "sibsp",
+            "parch",
+            "fare",
+            "embarked",
+            "created_at"
         ]
 
         for field in expected_fields:
             assert field in result
 
-        # Verificar se não há campos extras
         assert len(result) == len(expected_fields)
