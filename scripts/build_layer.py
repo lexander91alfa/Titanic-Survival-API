@@ -9,6 +9,8 @@ LAYER_BUILD_DIR = "../.build/lambda_layer"
 PYTHON_PACKAGE_DIR = os.path.join(LAYER_BUILD_DIR, "python") # Pasta que será compactada
 SITE_PACKAGES_DIR = os.path.join(PYTHON_PACKAGE_DIR, "lib/python3.12/site-packages")
 REQUIREMENTS_FILE = "../api/requirements.txt"
+MODEL_SOURCE = "../api/models/model.joblib"
+MODEL_DEST_DIR = os.path.join(PYTHON_PACKAGE_DIR, "models")
 
 def clean_and_create_dir():
     """Limpa e recria o diretório de build."""
@@ -16,6 +18,7 @@ def clean_and_create_dir():
     if os.path.exists(LAYER_BUILD_DIR):
         shutil.rmtree(LAYER_BUILD_DIR)
     os.makedirs(SITE_PACKAGES_DIR)
+    os.makedirs(MODEL_DEST_DIR)
 
 def install_dependencies():
     """Instala as dependências de produção na pasta de build."""
@@ -36,6 +39,17 @@ def install_dependencies():
         print("--- ERRO: Falha ao instalar as dependências. ---", flush=True)
         print(e.stderr, flush=True)
         sys.exit(1)
+
+def copy_model():
+    """Copia o modelo treinado para a layer."""
+    print(f">>> Copiando modelo de '{MODEL_SOURCE}' para a layer...", flush=True)
+    if not os.path.exists(MODEL_SOURCE):
+        print(f"--- ERRO: Modelo não encontrado em '{MODEL_SOURCE}' ---", flush=True)
+        sys.exit(1)
+    
+    model_dest = os.path.join(MODEL_DEST_DIR, "model.joblib")
+    shutil.copy2(MODEL_SOURCE, model_dest)
+    print(">>> Modelo copiado com sucesso.", flush=True)
 
 def slim_package():
     """
@@ -58,7 +72,7 @@ def slim_package():
                 os.remove(path)
     
     print("--- Otimizando arquivos binários (.so)..." , flush=True)
-    strip_command = f"find {SITE_PACKAGES_DIR} -name '*.so' -exec strip {{}} \;"
+    strip_command = f"find {SITE_PACKAGES_DIR} -name '*.so' -exec strip {{}} \\;"
     try:
         subprocess.run(strip_command, shell=True, check=True)
         print(">>> Arquivos binários (.so) otimizados.", flush=True)
@@ -71,5 +85,6 @@ def slim_package():
 if __name__ == "__main__":
     clean_and_create_dir()
     install_dependencies()
+    copy_model()
     slim_package()
     print("\n[SUCCESS] Build da camada concluído e otimizado com sucesso!", flush=True)

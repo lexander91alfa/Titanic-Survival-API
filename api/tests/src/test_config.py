@@ -36,7 +36,7 @@ class TestAppConfig:
         assert AppConfig.get_environment() == "development"
         assert AppConfig.get_log_level() == "INFO"
         assert AppConfig.get_log_type() == "console"
-        assert AppConfig.get_model_path() == "models/model"
+        assert AppConfig.get_model_path() == "models/model.joblib"
         assert AppConfig.get_model_method() == "joblib"
 
     @patch.dict("os.environ", {"ENVIRONMENT": "production"})

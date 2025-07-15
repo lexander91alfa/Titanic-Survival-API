@@ -43,7 +43,13 @@ class PredictionService:
             method (str): Método de carregamento ('joblib' ou 'pickle').
             lazy_loading (bool): Se True, usa lazy loading; se False, carrega imediatamente.
         """
-        self.model_path = os.path.join("models", model_name)
+        # Verificar se está rodando no Lambda (onde a layer está em /opt/python)
+        if os.path.exists("/opt/python/models"):
+            self.model_path = os.path.join("/opt/python/models", model_name)
+        else:
+            # Ambiente local ou de desenvolvimento
+            self.model_path = os.path.join("models", model_name)
+            
         self.method = method
         self.logger = get_logger()
         self._model = None
