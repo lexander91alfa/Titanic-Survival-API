@@ -33,7 +33,7 @@ class AppConfig:
     @classmethod
     def get_model_path(cls) -> str:
         """Retorna o caminho do modelo."""
-        return os.getenv("MODEL_PATH", "models/model.joblib")
+        return os.getenv("MODEL_PATH", "modelos/model.joblib")
 
     @classmethod
     def get_model_method(cls) -> str:

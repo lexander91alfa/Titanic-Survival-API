@@ -24,7 +24,7 @@ Este projeto implementa uma API REST completa que:
 
 - **[Swagger/OpenAPI](./swagger/openapi.yaml)** - Especificação da API
 - **[Streamlit App](./app/)** - Interface web para testes
-- **[Notebooks ML](./api/models/)** - Treinamento e análise do modelo
+- **[Notebooks ML](./api/modelos/)** - Treinamento e análise do modelo
 - **[Testes](./api/tests/)** - Suite de testes automatizados
 
 ## 🚀 Quick Start

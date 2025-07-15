@@ -26,8 +26,8 @@ data "archive_file" "lambda_zip" {
     "api_mock.py",
     "tests/**",
     "**/tests/**",
-    "models/**",
-    "**/models/**",
+    "modelos/**",
+    "**/modelos/**",
   ]
 }
 

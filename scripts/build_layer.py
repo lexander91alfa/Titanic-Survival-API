@@ -9,8 +9,8 @@ LAYER_BUILD_DIR = "../.build/lambda_layer"
 PYTHON_PACKAGE_DIR = os.path.join(LAYER_BUILD_DIR, "python") # Pasta que será compactada
 SITE_PACKAGES_DIR = os.path.join(PYTHON_PACKAGE_DIR, "lib/python3.12/site-packages")
 REQUIREMENTS_FILE = "../api/requirements.txt"
-MODEL_SOURCE = "../api/models/model.joblib"
-MODEL_DEST_DIR = os.path.join(PYTHON_PACKAGE_DIR, "models")
+MODEL_SOURCE = "../api/modelos/model.joblib"
+MODEL_DEST_DIR = os.path.join(PYTHON_PACKAGE_DIR, "modelos")
 
 def clean_and_create_dir():
     """Limpa e recria o diretório de build."""

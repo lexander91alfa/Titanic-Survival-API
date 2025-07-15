@@ -27,7 +27,7 @@ class TestPredictionService:
     ):
         """Testa carregamento do modelo com joblib com sucesso."""
         # Arrange
-        mock_join.return_value = "models/model"
+        mock_join.return_value = "modelos/model"
 
         # Configure os.path.exists to return False for optimized file and True for regular file
         def mock_exists_side_effect(path):
@@ -48,7 +48,7 @@ class TestPredictionService:
 
         # Assert
         assert service.model == mock_model
-        mock_file.assert_called_with("models/model.joblib", "rb")
+        mock_file.assert_called_with("modelos/model.joblib", "rb")
         mock_joblib_load.assert_called_once()
 
     @patch("src.services.predict_service.pickle.load")
@@ -60,7 +60,7 @@ class TestPredictionService:
     ):
         """Testa carregamento do modelo com pickle com sucesso."""
         # Arrange
-        mock_join.return_value = "models/model"
+        mock_join.return_value = "modelos/model"
 
         # Configure os.path.exists to return True for .pkl file
         def mock_exists_side_effect(path):
@@ -79,7 +79,7 @@ class TestPredictionService:
 
         # Assert
         assert service.model == mock_model
-        mock_file.assert_called_with("models/model.pkl", "rb")
+        mock_file.assert_called_with("modelos/model.pkl", "rb")
         mock_pickle_load.assert_called_once()
 
     @patch("os.path.exists")
@@ -87,7 +87,7 @@ class TestPredictionService:
     def test_load_model_invalid_method(self, mock_join, mock_exists):
         """Testa carregamento do modelo com método inválido."""
         # Arrange
-        mock_join.return_value = "models/model"
+        mock_join.return_value = "modelos/model"
         mock_exists.return_value = True
 
         # Act & Assert
@@ -104,14 +104,14 @@ class TestPredictionService:
     def test_load_model_file_not_found(self, mock_join, mock_exists, mock_file):
         """Testa carregamento do modelo quando arquivo não existe."""
         # Arrange
-        mock_join.return_value = "models/model"
+        mock_join.return_value = "modelos/model"
         mock_exists.return_value = False  # Simula arquivo não encontrado
 
         # Act & Assert
         with pytest.raises(FileNotFoundError) as exc_info:
             PredictionService(model_name="model", method="joblib", lazy_loading=False)
 
-        assert "Nenhum arquivo de modelo encontrado para 'models/model'" in str(
+        assert "Nenhum arquivo de modelo encontrado para 'modelos/model'" in str(
             exc_info.value
         )
 
@@ -126,7 +126,7 @@ class TestPredictionService:
     ):
         """Testa carregamento do modelo com exceção geral."""
         # Arrange
-        mock_join.return_value = "models/model"
+        mock_join.return_value = "modelos/model"
 
         # Configure os.path.exists to return False for optimized file and True for regular file
         def mock_exists_side_effect(path):
@@ -142,7 +142,7 @@ class TestPredictionService:
         with pytest.raises(FileNotFoundError) as exc_info:
             PredictionService(model_name="model", method="joblib", lazy_loading=False)
 
-        assert "Nenhum arquivo de modelo encontrado para 'models/model'" in str(
+        assert "Nenhum arquivo de modelo encontrado para 'modelos/model'" in str(
             exc_info.value
         )
 

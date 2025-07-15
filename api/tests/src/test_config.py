@@ -14,7 +14,7 @@ class TestAppConfig:
             "ENVIRONMENT": "production",
             "LOG_LEVEL": "DEBUG",
             "LOG_TYPE": "file",
-            "MODEL_PATH": "models/test-model",
+            "MODEL_PATH": "modelos/test-model",
             "MODEL_METHOD": "pickle",
         },
     )
@@ -25,7 +25,7 @@ class TestAppConfig:
         assert AppConfig.get_environment() == "production"
         assert AppConfig.get_log_level() == "DEBUG"
         assert AppConfig.get_log_type() == "file"
-        assert AppConfig.get_model_path() == "models/test-model"
+        assert AppConfig.get_model_path() == "modelos/test-model"
         assert AppConfig.get_model_method() == "pickle"
 
     @patch.dict("os.environ", {}, clear=True)
@@ -36,7 +36,7 @@ class TestAppConfig:
         assert AppConfig.get_environment() == "development"
         assert AppConfig.get_log_level() == "INFO"
         assert AppConfig.get_log_type() == "console"
-        assert AppConfig.get_model_path() == "models/model.joblib"
+        assert AppConfig.get_model_path() == "modelos/model.joblib"
         assert AppConfig.get_model_method() == "joblib"
 
     @patch.dict("os.environ", {"ENVIRONMENT": "production"})
