@@ -42,9 +42,7 @@ resource "aws_lambda_alias" "prediction_current" {
   name             = "current"
   description      = "Alias pointing to current version with SnapStart"
   function_name    = aws_lambda_function.prediction.function_name
-  function_version = aws_lambda_version.prediction_current.version
-
-  depends_on = [aws_lambda_version.prediction_current]
+  function_version = aws_lambda_function.prediction.version
 }
 
 resource "aws_cloudwatch_log_group" "lambda_logs" {
