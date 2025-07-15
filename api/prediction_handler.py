@@ -15,10 +15,13 @@ passenger_controller = PassengerController()
 def lambda_handler(event, _):
     """Função Lambda para lidar com requisições HTTP."""
     logger = get_logger()
-    http_adapter = HTTPAdapter(event)
+    
     
     try:
+        http_adapter = HTTPAdapter(event)
         http_method = http_adapter.method
+
+        logger.info(f"Evento recebido: {event}")
 
         logger.info(f"Requisição recebida: {http_method} {http_adapter.path}")
 
@@ -55,7 +58,6 @@ def lambda_handler(event, _):
                     health_check = HealthCheck()
                     health_status = health_check.get_overall_health()
                     
-                    # Converter para o formato estruturado
                     components = {}
                     for key, value in health_status.items():
                         if key != "overall_status":

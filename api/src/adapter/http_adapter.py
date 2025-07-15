@@ -154,5 +154,5 @@ class HTTPAdapter:
                 "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
                 "X-Request-ID": request_id or str(uuid.uuid4()),
             },
-            "body": json.dumps(body_content, ensure_ascii=False, default=str)
+            "body": body_content
         }
