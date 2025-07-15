@@ -22,27 +22,14 @@ resource "aws_lambda_function" "prediction" {
     target_arn = aws_sqs_queue.lambda_dlq.arn
   }
 
-  publish = true
-
-  snap_start {
-    apply_on = "PublishedVersions"
-  }
-
   tags = local.tags
 
   depends_on = [
     aws_cloudwatch_log_group.lambda_logs,
     aws_iam_role_policy_attachment.lambda_policy_attachment,
-    aws_lambda_layer_version.python_dependencies_layer
+    aws_lambda_layer_version.python_dependencies_layer,
+    null_resource.lambda_source_trigger
   ]
-}
-
-
-resource "aws_lambda_alias" "prediction_current" {
-  name             = "current"
-  description      = "Alias pointing to current version with SnapStart"
-  function_name    = aws_lambda_function.prediction.function_name
-  function_version = aws_lambda_function.prediction.version
 }
 
 resource "aws_cloudwatch_log_group" "lambda_logs" {

@@ -1,9 +1,5 @@
-resource "random_id" "bucket_suffix" {
-  byte_length = 4
-}
-
 resource "aws_s3_bucket" "lambda_artifacts" {
-    bucket = "${local.project_name}-lambda-artifacts-${local.account_id}-${random_id.bucket_suffix.hex}"
+    bucket = "${local.project_name}-lambda-artifacts-${local.account_id}-dev"
 
     force_destroy = true
     tags = local.tags

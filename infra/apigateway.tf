@@ -20,7 +20,7 @@ resource "aws_apigatewayv2_integration" "lambda_integration" {
   api_id           = aws_apigatewayv2_api.http_api.id
   integration_type = "AWS_PROXY"
   
-  integration_uri = aws_lambda_alias.prediction_current.invoke_arn
+  integration_uri = aws_lambda_function.prediction.invoke_arn
 
   payload_format_version = "2.0" 
 }
@@ -93,7 +93,6 @@ resource "aws_lambda_permission" "api_gw_permission" {
   action        = "lambda:InvokeFunction"
   
   function_name = aws_lambda_function.prediction.function_name
-  qualifier     = aws_lambda_alias.prediction_current.name
   
   principal     = "apigateway.amazonaws.com"
 
