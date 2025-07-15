@@ -22,6 +22,8 @@ resource "aws_lambda_function" "prediction" {
     target_arn = aws_sqs_queue.lambda_dlq.arn
   }
 
+  publish = true
+
   snap_start {
     apply_on = "PublishedVersions"
   }
@@ -35,19 +37,7 @@ resource "aws_lambda_function" "prediction" {
   ]
 }
 
-# Versão da Lambda para SnapStart
-resource "aws_lambda_version" "prediction_current" {
-  function_name = aws_lambda_function.prediction.function_name
-  description   = "Current version with SnapStart enabled"
 
-  lifecycle {
-    create_before_destroy = true
-  }
-
-  depends_on = [aws_lambda_function.prediction]
-}
-
-# Alias para a versão atual
 resource "aws_lambda_alias" "prediction_current" {
   name             = "current"
   description      = "Alias pointing to current version with SnapStart"
