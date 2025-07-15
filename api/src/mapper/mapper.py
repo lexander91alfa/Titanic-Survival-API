@@ -1,5 +1,9 @@
 from typing import Any, Dict
 from decimal import Decimal
+from pytz import timezone
+from datetime import datetime
+
+timezone_sao_paulo = timezone("America/Sao_Paulo")
 
 from src.models.passenger_request import PassengerRequest
 
@@ -15,4 +19,5 @@ def map_request_to_dynamodb_item(passenger_request: PassengerRequest) -> Dict[st
         "parch": int(passenger_request.Parch),
         "fare": Decimal(passenger_request.Fare).quantize(Decimal('1.00')),
         "embarked": passenger_request.Embarked,
+        "created_at": datetime.now(timezone_sao_paulo).isoformat(),
     }
