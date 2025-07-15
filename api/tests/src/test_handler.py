@@ -16,12 +16,12 @@ def setup_test_environment():
     """Ensure test environment variables are set for the entire test session."""
     # Backup original value if it exists
     original_value = os.environ.get("DYNAMODB_TABLE_NAME")
-    
+
     # Set test value
     os.environ["DYNAMODB_TABLE_NAME"] = "test-table"
-    
+
     yield
-    
+
     # Restore original value or remove if it didn't exist
     if original_value is not None:
         os.environ["DYNAMODB_TABLE_NAME"] = original_value
@@ -35,22 +35,26 @@ class TestLambdaHandler:
     @pytest.fixture(autouse=True)
     def setup_test_environment(self):
         """Setup do ambiente de teste com todos os mocks necessários."""
-        with patch("src.repository.passenger_repository.boto3") as mock_boto3, \
-             patch("src.services.predict_service.PredictionService._load_model") as mock_load_model, \
-             patch("prediction_handler.passenger_controller") as mock_passenger_controller:
-            
+        with patch("src.repository.passenger_repository.boto3") as mock_boto3, patch(
+            "src.services.predict_service.PredictionService._load_model"
+        ) as mock_load_model, patch(
+            "prediction_handler.passenger_controller"
+        ) as mock_passenger_controller:
+
             # Configurar mock do modelo
             mock_model = MagicMock()
-            mock_model.predict_proba.return_value = [[0.3, 0.7]]  # 70% chance de sobrevivência
+            mock_model.predict_proba.return_value = [
+                [0.3, 0.7]
+            ]  # 70% chance de sobrevivência
             mock_load_model.return_value = mock_model
-            
+
             # Configurar mock do DynamoDB
             mock_table = MagicMock()
             mock_boto3.resource.return_value.Table.return_value = mock_table
-            
+
             # Configurar mock do passenger_controller
             self.mock_passenger_controller = mock_passenger_controller
-            
+
             yield
 
     def test_handler_post_success(self, passenger_repository):
@@ -63,7 +67,7 @@ class TestLambdaHandler:
             "passenger_id": "1",
             "survival_probability": 0.7,
             "prediction": "survived",
-            "confidence_level": "medium"
+            "confidence_level": "medium",
         }
         self.mock_passenger_controller.save_passenger.return_value = [mock_passenger]
 
@@ -119,17 +123,20 @@ class TestLambdaHandler:
             "passenger_id": "1",
             "survival_probability": 0.8,
             "prediction": "survived",
-            "confidence_level": "high"
+            "confidence_level": "high",
         }
         mock_passenger2 = MagicMock()
         mock_passenger2.model_dump.return_value = {
             "passenger_id": "2",
             "survival_probability": 0.3,
             "prediction": "not_survived",
-            "confidence_level": "medium"
+            "confidence_level": "medium",
         }
-        self.mock_passenger_controller.save_passenger.return_value = [mock_passenger1, mock_passenger2]
-        
+        self.mock_passenger_controller.save_passenger.return_value = [
+            mock_passenger1,
+            mock_passenger2,
+        ]
+
         test_event = {
             "httpMethod": "POST",
             "path": "/sobreviventes",
@@ -178,14 +185,14 @@ class TestLambdaHandler:
                     "passenger_id": "1",
                     "survival_probability": 0.8,
                     "prediction": "survived",
-                    "confidence_level": "high"
+                    "confidence_level": "high",
                 },
                 {
-                    "passenger_id": "2", 
+                    "passenger_id": "2",
                     "survival_probability": 0.3,
                     "prediction": "not_survived",
-                    "confidence_level": "medium"
-                }
+                    "confidence_level": "medium",
+                },
             ],
             "pagination": {
                 "page": 1,
@@ -193,11 +200,11 @@ class TestLambdaHandler:
                 "total_items": 2,
                 "total_pages": 1,
                 "has_next": False,
-                "has_previous": False
-            }
+                "has_previous": False,
+            },
         }
         self.mock_passenger_controller.get_all_passengers.return_value = mock_result
-        
+
         test_event = {
             "httpMethod": "GET",
             "path": "/sobreviventes",
@@ -232,10 +239,10 @@ class TestLambdaHandler:
             "passenger_id": "123",
             "survival_probability": 0.75,
             "prediction": "survived",
-            "confidence_level": "medium"
+            "confidence_level": "medium",
         }
         self.mock_passenger_controller.get_passenger_by_id.return_value = mock_passenger
-        
+
         test_event = {
             "httpMethod": "GET",
             "path": "/sobreviventes/123",
@@ -272,13 +279,16 @@ class TestLambdaHandler:
         """Testa DELETE de um passageiro."""
         # Configure the mocked passenger controller
         from src.models.api_response import DeleteResponse
+
         mock_delete_response = DeleteResponse(
             deleted=True,
-            passenger_id="456", 
-            message="Passageiro com ID 456 excluído com sucesso."
+            passenger_id="456",
+            message="Passageiro com ID 456 excluído com sucesso.",
         )
-        self.mock_passenger_controller.delete_passenger.return_value = mock_delete_response
-        
+        self.mock_passenger_controller.delete_passenger.return_value = (
+            mock_delete_response
+        )
+
         test_event = {
             "httpMethod": "DELETE",
             "path": "/sobreviventes/456",
@@ -362,8 +372,10 @@ class TestLambdaHandler:
     def test_handler_internal_server_error(self, passenger_repository):
         """Testa tratamento de erro interno do servidor."""
         # Configure the mocked passenger controller to raise Exception
-        self.mock_passenger_controller.save_passenger.side_effect = Exception("Internal error")
-        
+        self.mock_passenger_controller.save_passenger.side_effect = Exception(
+            "Internal error"
+        )
+
         test_event = {
             "httpMethod": "POST",
             "path": "/sobreviventes",
@@ -394,7 +406,7 @@ class TestLambdaHandler:
         self.mock_passenger_controller.save_passenger.side_effect = ValueError(
             "Business rule violation"
         )
-        
+
         test_event = {
             "httpMethod": "POST",
             "path": "/sobreviventes",

@@ -4,6 +4,7 @@ from src.repository.passenger_repository import PassengerRepository
 from src.logging.custom_logging import get_logger
 from src.config.app_config import AppConfig
 from datetime import datetime
+from time import time
 
 
 class HealthCheck:
@@ -15,6 +16,9 @@ class HealthCheck:
     def check_model_health(self) -> Dict[str, Any]:
         """Verifica se o modelo está carregado e funcionando."""
         try:
+            start_time = time()
+            self.logger.info("Iniciando verificação de saúde do modelo...")
+
             prediction_service = PredictionService(
                 model_name="model", method=AppConfig.get_model_method()
             )
@@ -31,11 +35,19 @@ class HealthCheck:
 
             probability = prediction_service.predict(test_data)
 
+            elapsed_time = time() - start_time
+            self.logger.info(
+                f"Verificação de saúde do modelo concluída em {elapsed_time:.2f} segundos."
+            )
+
             return {
                 "status": "healthy",
                 "message": "Modelo funcionando corretamente",
+                "elapsed_time": elapsed_time,
+                "test_data": test_data,
+                "probability": probability,
             }
-        
+
         except Exception as e:
             return {"status": "unhealthy", "message": f"Erro no modelo: {str(e)}"}
 

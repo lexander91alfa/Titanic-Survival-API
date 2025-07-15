@@ -15,7 +15,9 @@ class PassengerRepository:
         self.logger = get_logger()
         table_name = getenv("DYNAMODB_TABLE_NAME")
         if not table_name:
-            raise ValueError("Variável de ambiente DYNAMODB_TABLE_NAME não está definida.")
+            raise ValueError(
+                "Variável de ambiente DYNAMODB_TABLE_NAME não está definida."
+            )
         self.table = self.dynamodb.Table(table_name)
 
     def save(self, passenger_data: Dict[str, Any]) -> None:
@@ -109,14 +111,18 @@ class PassengerRepository:
             result = self.table.delete_item(
                 Key={"passenger_id": passenger_id},
                 ConditionExpression="attribute_exists(passenger_id)",
-                ReturnValues="ALL_OLD"
+                ReturnValues="ALL_OLD",
             )
             if "Attributes" not in result:
-                self.logger.warning(f"Passageiro {passenger_id} não encontrado para exclusão.")
+                self.logger.warning(
+                    f"Passageiro {passenger_id} não encontrado para exclusão."
+                )
                 return False
             return True
         except self.dynamodb.meta.client.exceptions.ConditionalCheckFailedException:
-            self.logger.warning(f"Passageiro {passenger_id} não encontrado para exclusão.")
+            self.logger.warning(
+                f"Passageiro {passenger_id} não encontrado para exclusão."
+            )
             return False
         except boto3.exceptions.Boto3Error as e:
             self.logger.error(

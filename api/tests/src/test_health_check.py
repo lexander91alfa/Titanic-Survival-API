@@ -42,7 +42,6 @@ class TestHealthCheck:
         assert result["status"] == "unhealthy"
         assert "Modelo não encontrado" in result["message"]
 
-
     @patch.object(AppConfig, "is_development", return_value=False)
     @patch("src.middleware.health_check.PassengerRepository")
     def test_check_database_health_success(self, mock_repository, mock_is_dev):

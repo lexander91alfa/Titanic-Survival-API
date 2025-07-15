@@ -12,7 +12,9 @@ def test_create_prediction_success(passenger_controller):
     Verifica se o controller chama o serviço de predição e o repositório.
     """
     # Mock the prediction service to return expected value
-    with patch.object(passenger_controller.prediction_service, 'predict', return_value=0.6631):
+    with patch.object(
+        passenger_controller.prediction_service, "predict", return_value=0.6631
+    ):
         requests_data = [
             PassengerRequest(
                 PassengerId="1",
@@ -41,7 +43,9 @@ def test_create_prediction_multiple_passengers(passenger_controller):
     Testa a criação de predições para múltiplos passageiros.
     """
     # Mock the prediction service to return different values for each passenger
-    with patch.object(passenger_controller.prediction_service, 'predict', side_effect=[0.6631, 0.8543]):
+    with patch.object(
+        passenger_controller.prediction_service, "predict", side_effect=[0.6631, 0.8543]
+    ):
         requests_data = [
             PassengerRequest(
                 PassengerId="1",
@@ -136,8 +140,28 @@ def test_get_all_passengers_success(passenger_controller):
     """
     # Mock do repositório para retornar dados de teste
     mock_passengers = [
-        {"passenger_id": "1", "survival_probability": 0.3032, "pclass": 3, "sex": "male", "age": 22, "sibsp": 0, "parch": 0, "fare": 7.25, "embarked": "S"},
-        {"passenger_id": "2", "survival_probability": 0.7245, "pclass": 1, "sex": "female", "age": 28, "sibsp": 1, "parch": 0, "fare": 80.0, "embarked": "C"},
+        {
+            "passenger_id": "1",
+            "survival_probability": 0.3032,
+            "pclass": 3,
+            "sex": "male",
+            "age": 22,
+            "sibsp": 0,
+            "parch": 0,
+            "fare": 7.25,
+            "embarked": "S",
+        },
+        {
+            "passenger_id": "2",
+            "survival_probability": 0.7245,
+            "pclass": 1,
+            "sex": "female",
+            "age": 28,
+            "sibsp": 1,
+            "parch": 0,
+            "fare": 80.0,
+            "embarked": "C",
+        },
     ]
     passenger_controller.passenger_repository.get_all = MagicMock(
         return_value=mock_passengers
@@ -315,13 +339,16 @@ class TestPassengerControllerAdvanced:
 
             response = passenger_controller.save_passenger(requests_data)
 
-            assert response[0].survival_probability == 0.1235  # Arredondado para 4 casas
+            assert (
+                response[0].survival_probability == 0.1235
+            )  # Arredondado para 4 casas
 
     def test_get_all_passengers_empty_list(self, passenger_controller):
         """Testa get_all_passengers quando não há passageiros."""
         with patch.object(
             passenger_controller.passenger_repository, "get_all", return_value=[]
-        ):        result = passenger_controller.get_all_passengers()
+        ):
+            result = passenger_controller.get_all_passengers()
         assert result["items"] == []
         assert result["pagination"]["total_items"] == 0
 
@@ -335,7 +362,8 @@ class TestPassengerControllerAdvanced:
 
     def test_delete_passenger_success_message(self, passenger_controller):
         """Testa se delete_passenger retorna mensagem de sucesso correta."""
-        with patch.object(passenger_controller.passenger_repository, "delete"):        result = passenger_controller.delete_passenger("test_id")
+        with patch.object(passenger_controller.passenger_repository, "delete"):
+            result = passenger_controller.delete_passenger("test_id")
         expected_message = "Passageiro com ID test_id excluído com sucesso."
         assert result.message == expected_message
 

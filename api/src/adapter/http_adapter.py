@@ -86,15 +86,19 @@ class HTTPAdapter:
                 "Content-Type": "application/json",
                 "Access-Control-Allow-Origin": "*",
             },
-            "body": json.dumps(body_content, ensure_ascii=False, default=str) if body_content is not None else None
+            "body": (
+                json.dumps(body_content, ensure_ascii=False, default=str)
+                if body_content is not None
+                else None
+            ),
         }
 
     @staticmethod
     def build_standard_response(
-        status_code: int, 
-        body_data: Any, 
+        status_code: int,
+        body_data: Any,
         request_id: Optional[str] = None,
-        message: Optional[str] = None
+        message: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Método estático para construir a resposta HTTP padronizada.
@@ -120,7 +124,7 @@ class HTTPAdapter:
             metadata = APIMetadata()
             if request_id:
                 metadata.request_id = request_id
-            
+
             # Determinar mensagem padrão baseada no status
             if not message:
                 if status_code == 200:
@@ -131,17 +135,15 @@ class HTTPAdapter:
                     message = "Operação realizada com sucesso"
                 else:
                     message = "Operação concluída"
-            
+
             # Converter body_data para dict se for um modelo Pydantic
             if isinstance(body_data, BaseModel):
                 data = body_data.model_dump()
             else:
                 data = body_data
-            
+
             success_response = StandardSuccessResponse(
-                message=message,
-                data=data,
-                metadata=metadata
+                message=message, data=data, metadata=metadata
             )
             body_content = success_response.model_dump()
 
@@ -154,5 +156,5 @@ class HTTPAdapter:
                 "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
                 "X-Request-ID": request_id or str(uuid.uuid4()),
             },
-            "body": body_content
+            "body": body_content,
         }

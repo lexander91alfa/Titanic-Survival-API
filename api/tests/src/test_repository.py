@@ -24,12 +24,13 @@ def test_get_all_passengers(passenger_repository):
     """
 
     for i in range(12):
-        passenger_repository.save({
-            "passenger_id": f"test-id-{i}",
-            "probability": str(i * 0.1),
-            "input_data": {"Age": i + 20},
-        })
-    
+        passenger_repository.save(
+            {
+                "passenger_id": f"test-id-{i}",
+                "probability": str(i * 0.1),
+                "input_data": {"Age": i + 20},
+            }
+        )
 
     all_items = passenger_repository.get_all()
 

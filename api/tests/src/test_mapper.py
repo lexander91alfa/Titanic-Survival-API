@@ -171,7 +171,7 @@ class TestMapper:
             "parch",
             "fare",
             "embarked",
-            "created_at"
+            "created_at",
         ]
 
         for field in expected_fields:
