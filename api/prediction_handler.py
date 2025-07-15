@@ -58,20 +58,16 @@ def lambda_handler(event, _):
                     health_check = HealthCheck()
                     health_status = health_check.get_overall_health()
                     
-                    components = {}
-                    for key, value in health_status.items():
-                        if key != "overall_status":
-                            components[key] = HealthStatus(
-                                status=value.get("status", "unknown"),
-                                message=value.get("message", "No message available")
-                            )
-                    
                     health_response = HealthResponse(
-                        overall_status=health_status["overall_status"],
-                        components=components
+                        overall_status=health_status.get("overall_status", "unhealthy"),
+                        components=health_status.get("components", {}),
+                        uptime=health_status.get("uptime"),
                     )
                     
                     status_code = 200 if health_status["overall_status"] == "healthy" else 503
+
+                    health_response.metadata.request_id = http_adapter.request_id
+
                     return http_adapter.build_standard_response(
                         status_code, 
                         health_response,

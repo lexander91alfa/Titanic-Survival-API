@@ -1,6 +1,5 @@
 import os
 import sys
-import boto3
 import atexit
 from typing import Optional
 from contextlib import contextmanager
@@ -13,7 +12,8 @@ from mock_api.mock_event import (
     mock_post_passenger_event,
     mock_get_all_passengers_event,
     mock_get_passenger_by_id_event,
-    mock_delete_passenger_event
+    mock_delete_passenger_event,
+    mock_health_check_event
 )
 
 
@@ -88,7 +88,6 @@ class MockServerManager:
 def create_flask_app() -> Flask:
     """Factory function para criar a aplicação Flask"""
     from prediction_handler import lambda_handler
-    client = boto3.client('dynamodb')
     app = Flask(__name__)
     
     @app.route("/sobreviventes", methods=["POST"])
@@ -109,19 +108,14 @@ def create_flask_app() -> Flask:
     @app.route("/health", methods=["GET"])
     def health_check():
         """Endpoint de health check"""
+        try:
+            event = mock_health_check_event()
+            result = lambda_handler(event, None)
+            return jsonify(result), result.get("statusCode")
+        except Exception as e:
+            return jsonify({"error": f"Erro no health check: {str(e)}"}), 500
 
-        item = client.get_item(
-            TableName='passengers',
-            Key={
-                'passenger_id': {'S': '1'}
-            }
-        )
-        return jsonify({
-            "status": "OK",
-            "service": "Titanic Survival API Mock",
-            "body": item,
-            "environment": "development"
-        }), 200
+        
 
     @app.route("/sobreviventes", methods=["GET"])
     def get_all_passengers():

@@ -1,11 +1,14 @@
 from typing import Any, Dict, List, Optional, Union
 from pydantic import BaseModel, Field
 from datetime import datetime
+from pytz import timezone
+
+timezone_sao_paulo = timezone("America/Sao_Paulo")
 
 
 class APIMetadata(BaseModel):
     """Metadados da resposta da API."""
-    timestamp: str = Field(default_factory=lambda: datetime.utcnow().isoformat() + "Z")
+    timestamp: str = Field(default_factory=lambda: datetime.now(timezone_sao_paulo).isoformat() + "Z")
     version: str = Field(default="1.0.0", description="Versão da API")
     request_id: Optional[str] = Field(None, description="ID único da requisição")
 

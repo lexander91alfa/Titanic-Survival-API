@@ -3,6 +3,7 @@ from src.services.predict_service import PredictionService
 from src.repository.passenger_repository import PassengerRepository
 from src.logging.custom_logging import get_logger
 from src.config.app_config import AppConfig
+from datetime import datetime
 
 
 class HealthCheck:
@@ -18,7 +19,6 @@ class HealthCheck:
                 model_name="model", method=AppConfig.get_model_method()
             )
 
-            # Teste básico com dados dummy
             test_data = {
                 "Pclass": 3,
                 "Sex": "male",
@@ -34,22 +34,16 @@ class HealthCheck:
             return {
                 "status": "healthy",
                 "message": "Modelo funcionando corretamente",
-                "test_probability": round(probability, 4),
             }
+        
         except Exception as e:
             return {"status": "unhealthy", "message": f"Erro no modelo: {str(e)}"}
 
     def check_database_health(self) -> Dict[str, Any]:
         """Verifica se a conexão com o DynamoDB está funcionando."""
         try:
-            if AppConfig.is_development():
-                return {
-                    "status": "skipped",
-                    "message": "Verificação de DB pulada em desenvolvimento",
-                }
-
             repository = PassengerRepository()
-            # Teste simples de conexão
+
             repository.get_all()
 
             return {"status": "healthy", "message": "Conexão com DynamoDB funcionando"}
@@ -73,4 +67,5 @@ class HealthCheck:
             "overall_status": "healthy" if all_healthy else "unhealthy",
             "components": {"model": model_health, "database": db_health},
             "environment": AppConfig.get_environment(),
+            "uptime": datetime.now().isoformat(),
         }
