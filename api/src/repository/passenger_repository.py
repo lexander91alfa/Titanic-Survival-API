@@ -1,6 +1,6 @@
 import boto3
 from os import getenv
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 from src.logging.custom_logging import get_logger
 
 
