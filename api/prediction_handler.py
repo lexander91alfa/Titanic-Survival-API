@@ -21,7 +21,7 @@ def lambda_handler(event, _):
         http_adapter = HTTPAdapter(event)
         http_method = http_adapter.method
 
-        logger.info(f"Evento recebido: {event}")
+        logger.info(event)
 
         logger.info(f"Requisição recebida: {http_method} {http_adapter.path}")
 
