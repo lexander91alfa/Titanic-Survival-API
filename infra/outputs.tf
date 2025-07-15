@@ -1,6 +1,6 @@
 output "api_base_url" {
   description = "URL base da API para invocação"
-  value       = aws_api_gateway_stage.api_stage.invoke_url
+  value       = "${aws_apigatewayv2_api.http_api.api_endpoint}/${aws_apigatewayv2_stage.api_stage.name}"
 }
 
 output "dynamodb_table_name" {

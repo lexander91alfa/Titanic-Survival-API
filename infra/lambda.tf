@@ -1,6 +1,6 @@
 resource "aws_lambda_function" "prediction" {
   filename         = data.archive_file.lambda_zip.output_path
-  function_name    =    local.lambda.function_name
+  function_name    = local.lambda.function_name
   role            = aws_iam_role.lambda_role.arn
   handler         = local.lambda.handler
   source_code_hash = data.archive_file.lambda_zip.output_base64sha256
@@ -22,6 +22,10 @@ resource "aws_lambda_function" "prediction" {
     target_arn = aws_sqs_queue.lambda_dlq.arn
   }
 
+  snap_start {
+    apply_on = "PublishedVersions"
+  }
+
   tags = local.tags
 
   depends_on = [
@@ -29,6 +33,28 @@ resource "aws_lambda_function" "prediction" {
     aws_iam_role_policy_attachment.lambda_policy_attachment,
     aws_lambda_layer_version.python_dependencies_layer
   ]
+}
+
+# Versão da Lambda para SnapStart
+resource "aws_lambda_version" "prediction_current" {
+  function_name = aws_lambda_function.prediction.function_name
+  description   = "Current version with SnapStart enabled"
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  depends_on = [aws_lambda_function.prediction]
+}
+
+# Alias para a versão atual
+resource "aws_lambda_alias" "prediction_current" {
+  name             = "current"
+  description      = "Alias pointing to current version with SnapStart"
+  function_name    = aws_lambda_function.prediction.function_name
+  function_version = aws_lambda_version.prediction_current.version
+
+  depends_on = [aws_lambda_version.prediction_current]
 }
 
 resource "aws_cloudwatch_log_group" "lambda_logs" {

@@ -1,284 +1,137 @@
 # ===================================================================
-# 1. Definição da API REST
+#  Configuração do API Gateway (HTTP API v2)
 # ===================================================================
-resource "aws_api_gateway_rest_api" "titanic_api" {
-  name        = local.api_gateway.name
-  description = local.api_gateway.description
-}
+#
+# Este bloco de código cria um endpoint HTTP público que aciona
+# a nossa função Lambda do Titanic. Usamos a HTTP API (v2) por ser
+# mais simples e barata que a REST API (v1) para integrações proxy.
 
-# ===================================================================
-# 2. Criação dos Recursos (Endpoints)
-# ===================================================================
-resource "aws_api_gateway_resource" "sobreviventes" {
-  parent_id   = aws_api_gateway_rest_api.titanic_api.root_resource_id
-  path_part   = "sobreviventes"
-  rest_api_id = aws_api_gateway_rest_api.titanic_api.id
+# 1. O recurso principal da API
+# Define o container para nossas rotas e integrações.
+resource "aws_apigatewayv2_api" "http_api" {
+  name          = local.api_gateway.name
+  protocol_type = "HTTP"
+  description   = local.api_gateway.description
 
-  depends_on = [aws_api_gateway_rest_api.titanic_api]
-}
-
-resource "aws_api_gateway_resource" "sobrevivente_id" {
-  parent_id   = aws_api_gateway_resource.sobreviventes.id
-  path_part   = "{id}"
-  rest_api_id = aws_api_gateway_rest_api.titanic_api.id
-
-  depends_on = [aws_api_gateway_resource.sobreviventes]
-}
-
-resource "aws_api_gateway_resource" "health" {
-  parent_id   = aws_api_gateway_rest_api.titanic_api.root_resource_id
-  path_part   = "health"
-  rest_api_id = aws_api_gateway_rest_api.titanic_api.id
-
-  depends_on = [aws_api_gateway_rest_api.titanic_api]
-}
-
-# ===================================================================
-# 3. Métodos HTTP e Integração com a Lambda
-# ===================================================================
-
-resource "aws_api_gateway_method" "post_sobreviventes" {
-  rest_api_id   = aws_api_gateway_rest_api.titanic_api.id
-  resource_id   = aws_api_gateway_resource.sobreviventes.id
-  http_method   = "POST"
-  authorization = "NONE"
-  api_key_required = true
-
-}
-
-resource "aws_api_gateway_integration" "post_sobreviventes_lambda" {
-  rest_api_id = aws_api_gateway_rest_api.titanic_api.id
-  resource_id = aws_api_gateway_resource.sobreviventes.id
-  http_method = aws_api_gateway_method.post_sobreviventes.http_method
-
-  integration_http_method = "POST"
-  type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.prediction.invoke_arn
-
-  depends_on = [aws_api_gateway_method.post_sobreviventes, aws_lambda_function.prediction]
-}
-
-resource "aws_api_gateway_method" "get_all_sobreviventes" {
-  rest_api_id    = aws_api_gateway_rest_api.titanic_api.id
-  resource_id    = aws_api_gateway_resource.sobreviventes.id
-  http_method    = "GET"
-  authorization  = "NONE"
-  api_key_required = true
-
-  request_parameters = {
-    "method.request.querystring.page" = false
-    "method.request.querystring.limit" = false
-  }
-}
-
-resource "aws_api_gateway_integration" "get_all_sobreviventes_lambda" {
-  rest_api_id             = aws_api_gateway_rest_api.titanic_api.id
-  resource_id             = aws_api_gateway_resource.sobreviventes.id
-  http_method             = aws_api_gateway_method.get_all_sobreviventes.http_method
-  integration_http_method = "POST"
-  type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.prediction.invoke_arn
-
-  request_parameters = {
-    "integration.request.querystring.page" = "method.request.querystring.page"
-    "integration.request.querystring.limit" = "method.request.querystring.limit"
+  # Define uma política de CORS para permitir que a API
+  # seja chamada a partir de navegadores em outros domínios.
+  cors_configuration {
+    allow_origins = ["*"] # Para produção, restrinja a domínios específicos
+    allow_methods = ["POST", "GET", "DELETE", "OPTIONS"]
+    allow_headers = ["Content-Type", "Authorization", "X-API-Key"]
+    max_age       = 300
   }
 
-  request_templates = {
-    "application/json" = jsonencode({
-      page = "$util.escapeJavaScript($input.params('page'))"
-      limit = "$util.escapeJavaScript($input.params('limit'))"
-      defaultLimit = "10"
-    })
-  }
-
-  depends_on = [aws_api_gateway_method.get_all_sobreviventes, aws_lambda_function.prediction]
+  tags = local.tags
 }
 
-resource "aws_api_gateway_method" "get_one_sobrevivente" {
-  rest_api_id    = aws_api_gateway_rest_api.titanic_api.id
-  resource_id    = aws_api_gateway_resource.sobrevivente_id.id
-  http_method    = "GET"
-  authorization  = "NONE"
-  api_key_required = true
+# 2. A Integração com a Lambda
+# Este recurso é a "cola" que conecta o API Gateway à função Lambda.
+resource "aws_apigatewayv2_integration" "lambda_integration" {
+  api_id           = aws_apigatewayv2_api.http_api.id
+  integration_type = "AWS_PROXY" # Tipo padrão para passar toda a requisição
+  
+  # IMPORTANTE: Apontamos para o ARN de invocação (invoke_arn) do ALIAS da Lambda.
+  # Isso garante que estamos sempre a invocar a versão mais recente e publicada
+  # que tem o snapshot do SnapStart, e não a versão $LATEST.
+  integration_uri = aws_lambda_alias.prediction_current.invoke_arn
 
-  depends_on = [aws_api_gateway_resource.sobrevivente_id]
+  # O formato do payload que a Lambda receberá. 2.0 é o padrão para HTTP APIs.
+  payload_format_version = "2.0" 
 }
 
-resource "aws_api_gateway_integration" "get_one_sobrevivente_lambda" {
-  rest_api_id             = aws_api_gateway_rest_api.titanic_api.id
-  resource_id             = aws_api_gateway_resource.sobrevivente_id.id
-  http_method             = aws_api_gateway_method.get_one_sobrevivente.http_method
-  integration_http_method = "POST"
-  type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.prediction.invoke_arn
+# 3. As Rotas da API
+# Define quais métodos HTTP e caminhos (path) acionam a nossa integração.
 
-  depends_on = [aws_api_gateway_method.get_one_sobrevivente, aws_lambda_function.prediction]
+# Rota para criar nova predição (POST /sobreviventes)
+resource "aws_apigatewayv2_route" "post_sobreviventes" {
+  api_id    = aws_apigatewayv2_api.http_api.id
+  route_key = "POST /sobreviventes"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
 }
 
-resource "aws_api_gateway_method" "delete_sobrevivente" {
-  rest_api_id    = aws_api_gateway_rest_api.titanic_api.id
-  resource_id    = aws_api_gateway_resource.sobrevivente_id.id
-  http_method    = "DELETE"
-  authorization  = "NONE"
-  api_key_required = true
-
-  depends_on = [aws_api_gateway_resource.sobrevivente_id]
+# Rota para listar todas as predições (GET /sobreviventes)
+resource "aws_apigatewayv2_route" "get_all_sobreviventes" {
+  api_id    = aws_apigatewayv2_api.http_api.id
+  route_key = "GET /sobreviventes"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
 }
 
-resource "aws_api_gateway_integration" "delete_sobrevivente_lambda" {
-  rest_api_id             = aws_api_gateway_rest_api.titanic_api.id
-  resource_id             = aws_api_gateway_resource.sobrevivente_id.id
-  http_method             = aws_api_gateway_method.delete_sobrevivente.http_method
-  integration_http_method = "POST"
-  type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.prediction.invoke_arn
-
-  depends_on = [aws_api_gateway_method.delete_sobrevivente, aws_lambda_function.prediction]
+# Rota para buscar uma predição específica (GET /sobreviventes/{id})
+resource "aws_apigatewayv2_route" "get_one_sobrevivente" {
+  api_id    = aws_apigatewayv2_api.http_api.id
+  route_key = "GET /sobreviventes/{id}"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
 }
 
-resource "aws_api_gateway_method" "get_health" {
-  rest_api_id    = aws_api_gateway_rest_api.titanic_api.id
-  resource_id    = aws_api_gateway_resource.health.id
-  http_method    = "GET"
-  authorization  = "NONE"
-  api_key_required = false
-
-  depends_on = [aws_api_gateway_resource.health]
+# Rota para deletar uma predição (DELETE /sobreviventes/{id})
+resource "aws_apigatewayv2_route" "delete_sobrevivente" {
+  api_id    = aws_apigatewayv2_api.http_api.id
+  route_key = "DELETE /sobreviventes/{id}"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
 }
 
-resource "aws_api_gateway_integration" "get_health_lambda" {
-  rest_api_id             = aws_api_gateway_rest_api.titanic_api.id
-  resource_id             = aws_api_gateway_resource.health.id
-  http_method             = aws_api_gateway_method.get_health.http_method
-  integration_http_method = "POST"
-  type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.prediction.invoke_arn
-
-  depends_on = [aws_api_gateway_method.get_health, aws_lambda_function.prediction]
+# Rota para health check (GET /health)
+resource "aws_apigatewayv2_route" "get_health" {
+  api_id    = aws_apigatewayv2_api.http_api.id
+  route_key = "GET /health"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
 }
 
-# ===================================================================
-# 4. Deploy da API
-# ===================================================================
-resource "aws_api_gateway_deployment" "api_deployment" {
-  rest_api_id = aws_api_gateway_rest_api.titanic_api.id
-
-  triggers = {
-    redeployment = sha1(jsonencode(
-      [
-        aws_api_gateway_resource.sobreviventes.id,
-        aws_api_gateway_resource.sobrevivente_id.id,
-        aws_api_gateway_resource.health.id,
-        aws_api_gateway_method.post_sobreviventes.id,
-        aws_api_gateway_method.get_all_sobreviventes.id,
-        aws_api_gateway_method.get_one_sobrevivente.id,
-        aws_api_gateway_method.delete_sobrevivente.id,
-        aws_api_gateway_method.get_health.id,
-        aws_api_gateway_integration.post_sobreviventes_lambda.id,
-        aws_api_gateway_integration.get_all_sobreviventes_lambda.id,
-        aws_api_gateway_integration.get_one_sobrevivente_lambda.id,
-        aws_api_gateway_integration.delete_sobrevivente_lambda.id,
-        aws_api_gateway_integration.get_health_lambda.id,
-      ]
-    ))
-  }
-
-  lifecycle {
-    create_before_destroy = true
-  }
-
-  depends_on = [
-    aws_api_gateway_integration.post_sobreviventes_lambda,
-    aws_api_gateway_integration.get_all_sobreviventes_lambda,
-    aws_api_gateway_integration.get_one_sobrevivente_lambda,
-    aws_api_gateway_integration.delete_sobrevivente_lambda,
-    aws_api_gateway_integration.get_health_lambda
-  ]
-}
-
-resource "aws_api_gateway_stage" "api_stage" {
-  deployment_id = aws_api_gateway_deployment.api_deployment.id
-  rest_api_id   = aws_api_gateway_rest_api.titanic_api.id
-  stage_name    = local.api_gateway.stage_name
+# 4. Stage da API (equivalente ao deployment na REST API)
+resource "aws_apigatewayv2_stage" "api_stage" {
+  api_id      = aws_apigatewayv2_api.http_api.id
+  name        = local.api_gateway.stage_name
+  auto_deploy = true
 
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.api_gateway_logs.arn
     format = jsonencode({
       requestId    = "$context.requestId"
       ip           = "$context.identity.sourceIp"
-      caller       = "$context.identity.caller"
-      user         = "$context.identity.user"
       requestTime  = "$context.requestTime"
       httpMethod   = "$context.httpMethod"
-      resourcePath = "$context.resourcePath"
+      routeKey     = "$context.routeKey"
       status       = "$context.status"
       protocol     = "$context.protocol"
       responseLength = "$context.responseLength"
+      error        = "$context.error.message"
+      errorType    = "$context.error.messageString"
     })
+  }
+
+  default_route_settings {
+    throttling_burst_limit = 5
+    throttling_rate_limit  = 10
   }
 
   tags = local.tags
 
   depends_on = [
-    aws_api_gateway_deployment.api_deployment,
-    aws_cloudwatch_log_group.api_gateway_logs,
-    aws_api_gateway_account.api_gateway_account
+    aws_cloudwatch_log_group.api_gateway_logs
   ]
 }
 
-# ===================================================================
-# 5. Permissão para a Lambda
-# ===================================================================
-resource "aws_lambda_permission" "api_gateway_permission" {
+# 5. Permissão para o API Gateway Invocar a Lambda
+# É crucial dar permissão explícita para o serviço do API Gateway
+# poder executar a nossa função Lambda.
+resource "aws_lambda_permission" "api_gw_permission" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
+  
+  # A permissão é dada à função...
   function_name = aws_lambda_function.prediction.function_name
+  # ...mas especificamente para o alias "current".
+  qualifier     = aws_lambda_alias.prediction_current.name
+  
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_api_gateway_rest_api.titanic_api.execution_arn}/*/*"
+
+  # O source_arn restringe a invocação para vir apenas desta API específica,
+  # o que é uma boa prática de segurança.
+  source_arn = "${aws_apigatewayv2_api.http_api.execution_arn}/*/*"
 }
 
-# ===================================================================
-# 6. Segurança: API Key e Usage Plan (Throttling)
-# ===================================================================
-resource "aws_api_gateway_api_key" "case_api_key" {
-  name = "api_key_api_titanic_survival"
-}
-
-resource "aws_api_gateway_usage_plan" "case_usage_plan" {
-  name = "plan_to_limit_api_usage"
-  description = "Plano para limitar o uso da API do case"
-
-  api_stages {
-    api_id = aws_api_gateway_rest_api.titanic_api.id
-    stage  = aws_api_gateway_stage.api_stage.stage_name
-  }
-
-  throttle_settings {
-    burst_limit = 5
-    rate_limit  = 10
-  }
-
-  quota_settings {
-    limit  = 100
-    period = "DAY"
-  }
-
-  depends_on = [aws_api_gateway_stage.api_stage]
-}
-
-resource "aws_api_gateway_usage_plan_key" "case_plan_key" {
-  key_id        = aws_api_gateway_api_key.case_api_key.id
-  key_type      = "API_KEY"
-  usage_plan_id = aws_api_gateway_usage_plan.case_usage_plan.id
-
-  depends_on = [aws_api_gateway_api_key.case_api_key, aws_api_gateway_usage_plan.case_usage_plan]
-}
-
-# ===================================================================
-# 7. Logs
-# ===================================================================
-
+# 6. Logs
 resource "aws_cloudwatch_log_group" "api_gateway_logs" {
   name              = "/aws/apigateway/${local.project_name}"
   retention_in_days = 1
@@ -286,8 +139,10 @@ resource "aws_cloudwatch_log_group" "api_gateway_logs" {
   tags = local.tags
 }
 
-resource "aws_api_gateway_account" "api_gateway_account" {
-  cloudwatch_role_arn = aws_iam_role.api_gateway_cloudwatch_role.arn
-
-  depends_on = [aws_iam_role_policy_attachment.api_gateway_cloudwatch_attachment]
+# 7. Output da URL da API
+# Este output irá mostrar a URL final da sua API no terminal
+# após a execução do `terraform apply`.
+output "api_endpoint" {
+  description = "URL do endpoint da API para predição"
+  value       = aws_apigatewayv2_api.http_api.api_endpoint
 }
