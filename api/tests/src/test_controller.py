@@ -321,7 +321,7 @@ class TestPassengerControllerAdvanced:
         """Testa se delete_passenger retorna mensagem de sucesso correta."""
         with patch.object(passenger_controller.passenger_repository, "delete"):
             result = passenger_controller.delete_passenger("test_id")
-            expected_message = "Passenger with ID test_id deleted successfully."
+            expected_message = "Passageiro com ID test_id excluído com sucesso."
             assert result["message"] == expected_message
 
     def test_error_logging(self, passenger_controller):

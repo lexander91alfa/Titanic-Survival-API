@@ -172,8 +172,7 @@ class TestLambdaHandler:
 
         assert response["statusCode"] == 200
         body = json.loads(response["body"])
-        assert "items" in body
-        assert len(body["items"]) == 2
+        assert len(body) == 2
 
     def test_handler_get_passenger_by_id(self, passenger_repository):
         """Testa GET para um passageiro específico."""

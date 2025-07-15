@@ -15,7 +15,7 @@ class PassengerController:
         self.logger = get_logger()
 
     def save_passenger(self, passengers_data: List[PassengerRequest]):
-        """Saves passenger data and returns survival probability and id."""
+        """Salva os dados do passageiro e retorna a probabilidade de sobrevivência e o ID."""
         try:
             result = []
 
@@ -44,48 +44,48 @@ class PassengerController:
             return result
 
         except ValueError as ve:
-            self.logger.error(f"Validation error: {str(ve)}")
-            raise ValueError(f"Validation error: {str(ve)}")
+            self.logger.error(f"Erro de validação: {str(ve)}")
+            raise ValueError(f"Erro de validação: {str(ve)}")
         except Exception as e:
-            self.logger.error(f"Unexpected error: {str(e)}")
-            raise Exception(f"Unexpected error: {str(e)}")
+            self.logger.error(f"Erro inesperado: {str(e)}")
+            raise Exception(f"Erro inesperado: {str(e)}")
 
     def get_all_passengers(self, page: int = 1, limit: int = 10):
-        """Retrieves all passengers from the repository with pagination."""
+        """Recupera todos os passageiros do repositório com paginação."""
         try:
             return self.passenger_repository.get_all(page=page, limit=limit)
         except Exception as e:
-            self.logger.error(f"Error retrieving passengers: {str(e)}")
-            raise Exception(f"Error retrieving passengers: {str(e)}")
+            self.logger.error(f"Erro ao recuperar passageiros: {str(e)}")
+            raise Exception(f"Erro ao recuperar passageiros: {str(e)}")
 
     def get_passenger_by_id(self, passenger_id: str):
-        """Retrieves a passenger by ID."""
+        """Recupera um passageiro pelo ID."""
         try:
             return self.passenger_repository.get_by_id(passenger_id)
         except Exception as e:
             self.logger.error(
-                f"Error retrieving passenger with ID {passenger_id}: {str(e)}"
+                f"Erro ao recuperar passageiro com ID {passenger_id}: {str(e)}"
             )
             raise Exception(
-                f"Error retrieving passenger with ID {passenger_id}: {str(e)}"
+                f"Erro ao recuperar passageiro com ID {passenger_id}: {str(e)}"
             )
 
     def delete_passenger(self, passenger_id: str):
-        """Deletes a passenger by ID."""
+        """Exclui um passageiro pelo ID."""
         try:
             result = self.passenger_repository.delete(passenger_id)
             if result:
                 return {
-                    "message": f"Passenger with ID {passenger_id} deleted successfully."
+                    "message": f"Passageiro com ID {passenger_id} excluído com sucesso."
                 }
             else:
                 return {
-                    "message": f"Passenger with ID {passenger_id} not found."
+                    "message": f"Passageiro com ID {passenger_id} não encontrado."
                 }
         except Exception as e:
             self.logger.error(
-                f"Error deleting passenger with ID {passenger_id}: {str(e)}"
+                f"Erro ao excluir passageiro com ID {passenger_id}: {str(e)}"
             )
             raise Exception(
-                f"Error deleting passenger with ID {passenger_id}: {str(e)}"
+                f"Erro ao excluir passageiro com ID {passenger_id}: {str(e)}"
             )

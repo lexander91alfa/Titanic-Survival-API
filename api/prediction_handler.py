@@ -59,7 +59,7 @@ def lambda_handler(event, _):
                         query_params = http_adapter.query_parameters
                         page = query_params.get("page")
                         limit = query_params.get("limit")
-                        
+
                         if page is not None and limit is not None:
                             passengers = passenger_controller.get_all_passengers(
                                 page=page, limit=limit
@@ -70,9 +70,9 @@ def lambda_handler(event, _):
                         passengers = passenger_controller.get_all_passengers()
 
                     if passengers.get("items"):
-                        return http_adapter.build_response(
-                            404, {"error": "Nenhum passageiro encontrado"}
-                        )
+                        return http_adapter.build_response(200, passengers["items"])
+                    else:
+                        return http_adapter.build_response(404, {"error": "Nenhum passageiro encontrado"})
 
                     return http_adapter.build_response(200, passengers)
                 elif http_adapter.resource == "/sobreviventes/{id}":
@@ -81,13 +81,12 @@ def lambda_handler(event, _):
                         return http_adapter.build_response(
                             400, {"error": "ID do passageiro é obrigatório"}
                         )
-                    
+
                     passenger = passenger_controller.get_passenger_by_id(passenger_id)
                     if not passenger:
                         return http_adapter.build_response(
                             404, {"error": "Passageiro não encontrado"}
                         )
-
                     return http_adapter.build_response(200, passenger)
 
             case "DELETE":
@@ -98,6 +97,7 @@ def lambda_handler(event, _):
                             400,
                             {"error": "ID do passageiro é obrigatório para exclusão"},
                         )
+
                     result = passenger_controller.delete_passenger(passenger_id)
                     return http_adapter.build_response(200, result)
                 else:
@@ -105,11 +105,10 @@ def lambda_handler(event, _):
                         400,
                         {"error": "ID do passageiro é obrigatório para exclusão"},
                     )
-
             case _:
-                    return http_adapter.build_response(
-                        405, {"error": "Método HTTP não permitido"}
-                    )
+                return http_adapter.build_response(
+                    405, {"error": "Método HTTP não permitido"}
+                )
 
     except ValidationError as ve:
         logger.error(f"Erro de validação: {str(ve)}")
@@ -117,17 +116,17 @@ def lambda_handler(event, _):
         return http_adapter.build_response(
             error_response.status_code, error_response.model_dump()
         )
-
     except ValueError as ve:
         logger.error(f"Erro de validação: {str(ve)}")
         error_response = StandardErrorResponse.business_error(str(ve))
         return http_adapter.build_response(
             error_response.status_code, error_response.model_dump()
         )
-
     except Exception as e:
         logger.error(f"Erro inesperado: {str(e)}")
         error_response = StandardErrorResponse.internal_error()
         return http_adapter.build_response(
             error_response.status_code, error_response.model_dump()
         )
+
+

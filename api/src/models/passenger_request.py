@@ -71,3 +71,34 @@ class PassengerRequest(BaseModel):
         if v < 0:
             raise ValueError("Tarifa não pode ser negativa.")
         return v
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "PassengerRequest":
+        """
+        Cria uma instância de PassengerRequest a partir de um dicionário.
+        """
+        return cls(
+            PassengerId=str(data["PassengerId"]),
+            Pclass=int(data["Pclass"]),
+            Sex=data["Sex"],
+            Age=float(data["Age"]),
+            SibSp=int(data["SibSp"]),
+            Parch=int(data["Parch"]),
+            Fare=float(data["Fare"]),
+            Embarked=data.get("Embarked"),
+        )
+
+    def to_dict(self) -> dict:
+        """
+        Converte a instância atual em um dicionário.
+        """
+        return {
+            "PassengerId": self.PassengerId,
+            "Pclass": self.Pclass,
+            "Sex": self.Sex,
+            "Age": self.Age,
+            "SibSp": self.SibSp,
+            "Parch": self.Parch,
+            "Fare": self.Fare,
+            "Embarked": self.Embarked,
+        }
