@@ -21,6 +21,8 @@ def lambda_handler(event, _):
         http_adapter = HTTPAdapter(event)
         http_method = http_adapter.method
 
+        event.pop("x-api-key")
+
         logger.info(event)
 
         logger.info(f"Requisição recebida: {http_method} {http_adapter.path}")
