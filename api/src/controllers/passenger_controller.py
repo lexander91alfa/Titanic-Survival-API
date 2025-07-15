@@ -10,7 +10,7 @@ from decimal import Decimal
 
 class PassengerController:
     def __init__(self):
-        self.prediction_service = PredictionService(model_name="model_fast", method="pickle")
+        self.prediction_service = PredictionService(model_name="model", method="joblib")
         self.passenger_repository = PassengerRepository()
         self.logger = get_logger()
 

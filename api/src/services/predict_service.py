@@ -206,18 +206,6 @@ class PredictionService:
             float: A probabilidade de sobrevivência (um valor entre 0.0 e 1.0).
         """
         try:
-            # Usar a propriedade model que implementa lazy loading
-            if not self.model:
-                raise RuntimeError(
-                    "Modelo não foi carregado. Não é possível fazer a predição."
-                )
-
-            # Validar se o modelo tem o método predict_proba
-            if not hasattr(self.model, "predict_proba"):
-                raise RuntimeError(
-                    "Modelo carregado não possui o método predict_proba necessário."
-                )
-
             processed_features = self._preprocess(request_data)
 
             probability_prediction = self.model.predict_proba(processed_features)
@@ -233,6 +221,7 @@ class PredictionService:
             self.logger.info(
                 f"Predição realizada com sucesso: {survival_probability:.4f}"
             )
+            
             return survival_probability
         except Exception as e:
             self.logger.error(f"ERRO: Falha na predição. Causa: {e}")

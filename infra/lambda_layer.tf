@@ -4,7 +4,7 @@ resource "null_resource" "build_lambda_layer" {
   }
 
   provisioner "local-exec" {
-    command = "python ../build_layer.py"
+    command = "python ../scripts/build_layer.py"
   }
 }
 
