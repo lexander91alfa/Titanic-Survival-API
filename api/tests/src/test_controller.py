@@ -89,7 +89,7 @@ def test_create_prediction_validation_error(passenger_controller):
         )
     ]
 
-    with pytest.raises(ValueError, match="Validation error: Invalid data"):
+    with pytest.raises(ValueError, match="Erro de validação: Invalid data"):
         passenger_controller.save_passenger(requests_data)
 
 
@@ -115,7 +115,7 @@ def test_create_prediction_unexpected_error(passenger_controller):
         )
     ]
 
-    with pytest.raises(Exception, match="Unexpected error: Database error"):
+    with pytest.raises(Exception, match="Erro inesperado: Database error"):
         passenger_controller.save_passenger(requests_data)
 
 
@@ -150,7 +150,7 @@ def test_get_all_passengers_error(passenger_controller):
     )
 
     with pytest.raises(
-        Exception, match="Error retrieving passengers: Database connection error"
+        Exception, match="Erro ao recuperar passageiros: Database connection error"
     ):
         passenger_controller.get_all_passengers()
 
@@ -182,7 +182,7 @@ def test_get_passenger_by_id_error(passenger_controller):
     )
 
     with pytest.raises(
-        Exception, match="Error retrieving passenger with ID 1: Passenger not found"
+        Exception, match="Erro ao recuperar passageiro com ID 1: Passenger not found"
     ):
         passenger_controller.get_passenger_by_id("1")
 
@@ -196,7 +196,7 @@ def test_delete_passenger_success(passenger_controller):
 
     response = passenger_controller.delete_passenger("1")
 
-    assert response["message"] == "Passenger with ID 1 deleted successfully."
+    assert response["message"] == "Passageiro com ID 1 excluído com sucesso."
     passenger_controller.passenger_repository.delete.assert_called_once_with("1")
 
 
@@ -210,7 +210,7 @@ def test_delete_passenger_error(passenger_controller):
     )
 
     with pytest.raises(
-        Exception, match="Error deleting passenger with ID 1: Delete operation failed"
+        Exception, match="Erro ao excluir passageiro com ID 1: Delete operation failed"
     ):
         passenger_controller.delete_passenger("1")
 
