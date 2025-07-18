@@ -92,7 +92,6 @@ def lambda_handler(event, _):
                     )
 
                     if result.get("items"):
-                        # Retornar com informação de paginação
                         response_data = {
                             "passengers": result["items"],
                             "pagination": result["pagination"],
@@ -104,9 +103,13 @@ def lambda_handler(event, _):
                             message="Lista de passageiros recuperada com sucesso",
                         )
                     else:
+                        error_response = StandardErrorResponse.business_error(
+                            "Passageiro não encontrado", 404
+                        )
+                        
                         return http_adapter.build_standard_response(
                             404,
-                            {"error": "Nenhum passageiro encontrado"},
+                            error_response,
                             request_id=http_adapter.request_id,
                         )
 
