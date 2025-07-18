@@ -44,16 +44,22 @@ class TestLambdaHandler:
     @pytest.fixture(autouse=True)
     def setup_prediction_service(self):
         """Setup do serviço de predição."""
-        with patch("src.services.predict_service.PredictionService._load_model") as mock_load_model:
+        with patch(
+            "src.services.predict_service.PredictionService._load_model"
+        ) as mock_load_model:
             mock_model = MagicMock()
-            mock_model.predict_proba.return_value = [[0.3, 0.7]]  # 70% chance de sobrevivência
+            mock_model.predict_proba.return_value = [
+                [0.3, 0.7]
+            ]  # 70% chance de sobrevivência
             mock_load_model.return_value = mock_model
             yield mock_model
 
     @pytest.fixture(autouse=True)
     def setup_controller(self):
         """Setup do controller de passageiros."""
-        with patch("prediction_handler.passenger_controller") as mock_passenger_controller:
+        with patch(
+            "prediction_handler.passenger_controller"
+        ) as mock_passenger_controller:
             self.mock_passenger_controller = mock_passenger_controller
             yield mock_passenger_controller
 
@@ -122,18 +128,22 @@ class TestLambdaHandler:
         """Testa POST com múltiplos passageiros."""
         # Arrange
         mock_responses = [
-            MagicMock(model_dump=lambda: {
-                "passenger_id": "1",
-                "survival_probability": 0.8,
-                "prediction": "survived",
-                "confidence_level": "high",
-            }),
-            MagicMock(model_dump=lambda: {
-                "passenger_id": "2",
-                "survival_probability": 0.3,
-                "prediction": "not_survived",
-                "confidence_level": "medium",
-            })
+            MagicMock(
+                model_dump=lambda: {
+                    "passenger_id": "1",
+                    "survival_probability": 0.8,
+                    "prediction": "survived",
+                    "confidence_level": "high",
+                }
+            ),
+            MagicMock(
+                model_dump=lambda: {
+                    "passenger_id": "2",
+                    "survival_probability": 0.3,
+                    "prediction": "not_survived",
+                    "confidence_level": "medium",
+                }
+            ),
         ]
         self.mock_passenger_controller.save_passenger.return_value = mock_responses
 
@@ -241,7 +251,7 @@ class TestLambdaHandler:
             "prediction": "survived",
             "confidence_level": "medium",
             "created_at": "2025-07-17T10:00:00Z",
-            "updated_at": "2025-07-17T10:00:00Z"
+            "updated_at": "2025-07-17T10:00:00Z",
         }
         self.mock_passenger_controller.get_passenger_by_id.return_value = mock_passenger
 
@@ -286,9 +296,11 @@ class TestLambdaHandler:
             deleted=True,
             passenger_id="456",
             message="Passageiro com ID 456 excluído com sucesso.",
-            deleted_at="2025-07-17T10:00:00Z"
+            deleted_at="2025-07-17T10:00:00Z",
         )
-        self.mock_passenger_controller.delete_passenger.return_value = mock_delete_response
+        self.mock_passenger_controller.delete_passenger.return_value = (
+            mock_delete_response
+        )
 
         test_event = {
             "httpMethod": "DELETE",

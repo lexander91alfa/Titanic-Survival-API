@@ -69,9 +69,7 @@ class TestPredictionService:
             service = PredictionService(model_name="model", method="joblib")
 
             # Assert
-            assert service.model_path == os.path.join(
-                "/opt/python/modelos", "model"
-            )
+            assert service.model_path == os.path.join("/opt/python/modelos", "model")
             mock_file.assert_called_with(
                 os.path.join("/opt/python/modelos", "model.joblib"), "rb"
             )
@@ -103,7 +101,9 @@ class TestPredictionService:
 
         assert "Arquivo não encontrado: modelos/model.joblib" in str(exc_info.value)
 
-    @patch("src.services.predict_service.joblib.load", side_effect=Exception("Load error"))
+    @patch(
+        "src.services.predict_service.joblib.load", side_effect=Exception("Load error")
+    )
     @patch("builtins.open", new_callable=mock_open)
     @patch("os.path.exists")
     def test_load_model_general_exception(

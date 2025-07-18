@@ -42,7 +42,11 @@ class HTTPAdapter:
     @property
     def resource(self) -> Optional[str]:
         """Retorna o recurso da requisição (routeKey)."""
-        return self._event.get("routeKey").split(" ")[1] if self._event.get("routeKey") else "N/A"
+        return (
+            self._event.get("routeKey").split(" ")[1]
+            if self._event.get("routeKey")
+            else "N/A"
+        )
 
     @property
     def headers(self) -> Dict[str, str]:
@@ -136,28 +140,22 @@ class HTTPAdapter:
         Método estático para construir a resposta HTTP padronizada para API Gateway v2.0.
         Converte modelos Pydantic para dicionários automaticamente.
         """
-        # Se for um erro, manter o formato atual
+        # ... (toda a sua lógica if/elif/else para criar o body_content permanece a mesma) ...
         if isinstance(body_data, StandardErrorResponse):
             body_content = body_data.model_dump()
         elif isinstance(body_data, HealthResponse):
-            # Health check tem formato próprio, não envolver em StandardSuccessResponse
             body_content = body_data.model_dump()
         elif isinstance(body_data, dict) and body_data.get("error") is True:
-            # Manter formato de erro existente
             body_content = body_data
         elif status_code >= 400:
-            # Para erros que não são StandardErrorResponse
             if isinstance(body_data, BaseModel):
                 body_content = body_data.model_dump()
             else:
                 body_content = body_data
         else:
-            # Para sucessos, usar StandardSuccessResponse
             metadata = APIMetadata()
             if request_id:
                 metadata.request_id = request_id
-
-            # Determinar mensagem padrão baseada no status
             if not message:
                 if status_code == 200:
                     message = "Operação realizada com sucesso"
@@ -168,7 +166,6 @@ class HTTPAdapter:
                 else:
                     message = "Operação concluída"
 
-            # Converter body_data para dict se for um modelo Pydantic
             if isinstance(body_data, BaseModel):
                 data = body_data.model_dump()
             else:
@@ -188,5 +185,6 @@ class HTTPAdapter:
                 "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
                 "X-Request-ID": request_id or str(uuid.uuid4()),
             },
-            "body": body_content,
+            # ✅ ALTERAÇÃO AQUI: Serializar o dicionário para uma string JSON
+            "body": json.dumps(body_content, ensure_ascii=False, default=str),
         }

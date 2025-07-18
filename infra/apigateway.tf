@@ -2,9 +2,9 @@
 #  Configuração do API Gateway (HTTP API v2)
 # ===================================================================
 resource "aws_apigatewayv2_api" "http_api" {
-  name          = local.api_gateway.name
-  protocol_type = "HTTP"
-  description   = local.api_gateway.description
+  name                   = local.api_gateway.name
+  protocol_type          = "HTTP"
+  description            = local.api_gateway.description
 
   cors_configuration {
     allow_origins = ["*"]
@@ -22,7 +22,7 @@ resource "aws_apigatewayv2_integration" "lambda_integration" {
   
   integration_uri = aws_lambda_function.prediction.invoke_arn
 
-  payload_format_version = "2.0" 
+  payload_format_version = "2.0"
 }
 
 resource "aws_apigatewayv2_route" "post_sobreviventes" {
@@ -56,23 +56,23 @@ resource "aws_apigatewayv2_route" "get_health" {
 }
 
 resource "aws_apigatewayv2_stage" "api_stage" {
-  api_id      = aws_apigatewayv2_api.http_api.id
-  name        = local.api_gateway.stage_name
+  api_id = aws_apigatewayv2_api.http_api.id
+  name   = "$default"
   auto_deploy = true
 
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.api_gateway_logs.arn
     format = jsonencode({
-      requestId    = "$context.requestId"
-      ip           = "$context.identity.sourceIp"
-      requestTime  = "$context.requestTime"
-      httpMethod   = "$context.httpMethod"
-      routeKey     = "$context.routeKey"
-      status       = "$context.status"
-      protocol     = "$context.protocol"
+      requestId      = "$context.requestId"
+      ip             = "$context.identity.sourceIp"
+      requestTime    = "$context.requestTime"
+      httpMethod     = "$context.httpMethod"
+      routeKey       = "$context.routeKey"
+      status         = "$context.status"
+      protocol       = "$context.protocol"
       responseLength = "$context.responseLength"
-      error        = "$context.error.message"
-      errorType    = "$context.error.messageString"
+      error          = "$context.error.message"
+      errorType      = "$context.error.messageString"
     })
   }
 
@@ -106,7 +106,8 @@ resource "aws_cloudwatch_log_group" "api_gateway_logs" {
   tags = local.tags
 }
 
-output "api_endpoint" {
-  description = "URL do endpoint da API para predição"
-  value       = aws_apigatewayv2_api.http_api.api_endpoint
+resource "aws_api_gateway_api_key" "main_key" {
+  name = "${local.project_name}-key"
+  
+  tags = local.tags
 }

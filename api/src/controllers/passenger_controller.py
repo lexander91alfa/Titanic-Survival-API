@@ -41,6 +41,7 @@ class PassengerController:
                     passenger_id=passenger.get("passenger_id", "unknown"),
                     probability=float(survival_prob),
                 )
+
                 result.append(prediction_result)
 
             self.logger.info("Todos os passageiros foram salvos com sucesso.")

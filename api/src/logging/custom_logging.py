@@ -29,9 +29,9 @@ def get_logger(type_logger="console", level=INFO) -> Logger:
     """
     formatter = CustomFormatter()
     logger = getLogger(str(uuid4()))
-    
+
     logger.propagate = False
-    
+
     if logger.hasHandlers():
         logger.handlers.clear()
 
@@ -42,7 +42,7 @@ def get_logger(type_logger="console", level=INFO) -> Logger:
         handler.setLevel(level)
         handler.setFormatter(formatter)
         logger.addHandler(handler)
-        
+
     else:
         if not path.exists("./logs"):
             makedirs("./logs")

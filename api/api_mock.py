@@ -95,7 +95,12 @@ def create_flask_app() -> Flask:
 
     app = Flask(__name__)
 
-    @app.route("/sobreviventes", methods=["POST"], strict_slashes=False, defaults={"body": None})
+    @app.route(
+        "/sobreviventes",
+        methods=["POST"],
+        strict_slashes=False,
+        defaults={"body": None},
+    )
     def predict_survival(body=None):
         """Prediz sobrevivência de passageiros"""
         try:

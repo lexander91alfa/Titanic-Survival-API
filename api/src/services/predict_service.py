@@ -72,13 +72,17 @@ class PredictionService:
                 else:
                     raise FileNotFoundError(f"Arquivo não encontrado: {file_path}")
             else:
-                raise ValueError("Método de carregamento inválido. Use 'joblib' ou 'pickle'.")
+                raise ValueError(
+                    "Método de carregamento inválido. Use 'joblib' ou 'pickle'."
+                )
 
             self.logger.info(f"Modelo carregado com sucesso usando {method}")
             return model
 
         except FileNotFoundError:
-            self.logger.error(f"ERRO: Arquivo do modelo não encontrado em '{self.model_path}'")
+            self.logger.error(
+                f"ERRO: Arquivo do modelo não encontrado em '{self.model_path}'"
+            )
             raise
         except Exception as e:
             self.logger.error(f"ERRO: Não foi possível carregar o modelo. Causa: {e}")
