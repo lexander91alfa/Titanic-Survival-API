@@ -20,7 +20,7 @@ class HealthCheck:
             self.logger.info("Iniciando verificação de saúde do modelo...")
 
             prediction_service = PredictionService(
-                model_name="model.joblib", method=AppConfig.get_model_method()
+                model_name="model", method=AppConfig.get_model_method()
             )
 
             test_data = {

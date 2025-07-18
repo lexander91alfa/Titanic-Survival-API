@@ -8,78 +8,39 @@ from sys import path
 import os
 
 
-class ModelConfig:
-    """Configurações padrão para preprocessing do modelo."""
-
-    DEFAULT_AGE = 29.7  # Média da idade no dataset Titanic
-    DEFAULT_FARE = 32.2  # Média da tarifa no dataset Titanic
-    DEFAULT_EMBARKED = "S"  # Mais comum no dataset
-
-    # Configurações de otimização
-    USE_COMPRESSION = True  # Usar compressão para economia de espaço
-    PREFERRED_METHOD = (
-        "pickle"  # pickle pode ser mais rápido que joblib para alguns modelos
-    )
-    MODEL_CACHE_ENABLED = True  # Habilitar cache de modelo
-
-
 class PredictionService:
     """
     Serviço encapsulado para carregar o modelo e realizar predições.
-    Implementa lazy loading para otimizar o carregamento do modelo.
+    O modelo é carregado imediatamente na inicialização.
     """
 
-    # Variável de classe para cache do modelo (singleton pattern)
-    _model_cache = {}
-
-    def __init__(
-        self, model_name: str, method: str = "joblib", lazy_loading: bool = True
-    ):
+    def __init__(self, model_name: str, method: str = "joblib"):
         """
-        Inicializa o serviço. O modelo será carregado apenas quando necessário (lazy loading).
+        Inicializa o serviço e carrega o modelo imediatamente.
 
         Args:
             model_name (str): O nome do modelo (usado para formar o caminho do arquivo).
             method (str): Método de carregamento ('joblib' ou 'pickle').
-            lazy_loading (bool): Se True, usa lazy loading; se False, carrega imediatamente.
         """
         # Verificar se está rodando no Lambda (onde a layer está em /opt/python)
-        if os.path.exists("/opt/python/models"):
-            self.model_path = os.path.join("/opt/python/models", model_name)
+        if os.path.exists("/opt/python/modelos"):
+            self.model_path = os.path.join("/opt/python/modelos", f"{model_name}")
         else:
             # Ambiente local ou de desenvolvimento
-            self.model_path = os.path.join("models", model_name)
-            
+            self.model_path = os.path.join("modelos", f"{model_name}")
+
         self.method = method
         self.logger = get_logger()
-        self._model = None
-        self.lazy_loading = lazy_loading
 
-        # Chave única para cache baseada no caminho e método
-        self._cache_key = f"{self.model_path}_{method}"
-
-        # Se lazy loading está desabilitado, carrega o modelo imediatamente
-        if not lazy_loading:
-            self._model = self._load_model(method)
+        # Carregar o modelo imediatamente
+        self.logger.info(f"Carregando modelo '{self.model_path}'.")
+        self._model = self._load_model(method)
 
     @property
     def model(self):
         """
-        Propriedade que implementa lazy loading do modelo.
-        O modelo é carregado apenas quando acessado pela primeira vez.
+        Propriedade que retorna o modelo carregado.
         """
-        if self._model is None and self.lazy_loading:
-            # Verificar se o modelo já está no cache da classe
-            if self._cache_key in self._model_cache:
-                self.logger.info(f"Modelo '{self.model_path}' encontrado no cache.")
-                self._model = self._model_cache[self._cache_key]
-            else:
-                self.logger.info(
-                    f"Carregando modelo '{self.model_path}' pela primeira vez."
-                )
-                self._model = self._load_model(self.method)
-                # Armazenar no cache da classe para reutilização
-                self._model_cache[self._cache_key] = self._model
         return self._model
 
     @model.setter
@@ -93,70 +54,32 @@ class PredictionService:
         """
         Método privado para carregar o modelo a partir do arquivo.
         Levanta um erro se o modelo não puder ser encontrado ou carregado.
-        Implementa otimizações para carregamento mais rápido.
         """
         try:
-            # Tentar métodos em ordem de preferência para performance
-            load_methods = []
-
             if method == "joblib":
-                load_methods = [
-                    ("joblib_compressed", f"{self.model_path}_optimized.joblib"),
-                    ("joblib", f"{self.model_path}.joblib"),
-                ]
-            elif method == "pickle":
-                load_methods = [
-                    ("pickle", f"{self.model_path}.pkl"),
-                    ("joblib", f"{self.model_path}.joblib"),  # Fallback
-                ]
-            else:
-                raise ValueError(
-                    "Método de carregamento inválido. Use 'joblib' ou 'pickle'."
-                )
-
-            model = None
-            actual_method = None
-
-            for load_method, file_path in load_methods:
+                file_path = f"{self.model_path}.joblib"
                 if os.path.exists(file_path):
-                    self.logger.info(
-                        f"Tentando carregar modelo com {load_method} de '{file_path}'"
-                    )
-
-                    try:
-                        if (
-                            load_method == "joblib"
-                            or load_method == "joblib_compressed"
-                        ):
-                            with open(file_path, "rb") as f:
-                                model = joblib.load(f)
-                        elif load_method == "pickle":
-                            with open(file_path, "rb") as f:
-                                model = pickle.load(f)
-
-                        actual_method = load_method
-                        self.logger.info(
-                            f"Modelo carregado com sucesso usando {load_method}"
-                        )
-                        break
-
-                    except Exception as e:
-                        self.logger.warning(f"Falha ao carregar com {load_method}: {e}")
-                        continue
+                    self.logger.info(f"Carregando modelo com joblib de '{file_path}'")
+                    with open(file_path, "rb") as f:
+                        model = joblib.load(f)
                 else:
-                    self.logger.debug(f"Arquivo não encontrado: {file_path}")
+                    raise FileNotFoundError(f"Arquivo não encontrado: {file_path}")
+            elif method == "pickle":
+                file_path = f"{self.model_path}.pkl"
+                if os.path.exists(file_path):
+                    self.logger.info(f"Carregando modelo com pickle de '{file_path}'")
+                    with open(file_path, "rb") as f:
+                        model = pickle.load(f)
+                else:
+                    raise FileNotFoundError(f"Arquivo não encontrado: {file_path}")
+            else:
+                raise ValueError("Método de carregamento inválido. Use 'joblib' ou 'pickle'.")
 
-            if model is None:
-                raise FileNotFoundError(
-                    f"Nenhum arquivo de modelo encontrado para '{self.model_path}'"
-                )
-
+            self.logger.info(f"Modelo carregado com sucesso usando {method}")
             return model
 
         except FileNotFoundError:
-            self.logger.error(
-                f"ERRO: Arquivo do modelo não encontrado em '{self.model_path}'"
-            )
+            self.logger.error(f"ERRO: Arquivo do modelo não encontrado em '{self.model_path}'")
             raise
         except Exception as e:
             self.logger.error(f"ERRO: Não foi possível carregar o modelo. Causa: {e}")
@@ -176,21 +99,9 @@ class PredictionService:
 
         try:
             # Usar valores padrão baseados em estatísticas do dataset
-            age = (
-                data.get("Age")
-                if data.get("Age") is not None
-                else ModelConfig.DEFAULT_AGE
-            )
-            fare = (
-                data.get("Fare")
-                if data.get("Fare") is not None
-                else ModelConfig.DEFAULT_FARE
-            )
-            embarked = (
-                data.get("Embarked")
-                if data.get("Embarked") is not None
-                else ModelConfig.DEFAULT_EMBARKED
-            )
+            age = data.get("Age") if data.get("Age") is not None else 29.7
+            fare = data.get("Fare") if data.get("Fare") is not None else 32.2
+            embarked = data.get("Embarked") if data.get("Embarked") is not None else "S"
 
             sex_male = 1 if data.get("Sex") == "male" else 0
 
@@ -257,21 +168,3 @@ class PredictionService:
         except Exception as e:
             self.logger.error(f"ERRO: Falha na predição. Causa: {e}")
             raise
-
-    @classmethod
-    def clear_model_cache(cls):
-        """
-        Limpa o cache de modelos da classe.
-        Útil para testes ou quando se quer forçar o recarregamento.
-        """
-        cls._model_cache.clear()
-
-    @classmethod
-    def get_cache_info(cls):
-        """
-        Retorna informações sobre o cache atual.
-        """
-        return {
-            "cached_models": list(cls._model_cache.keys()),
-            "cache_size": len(cls._model_cache),
-        }

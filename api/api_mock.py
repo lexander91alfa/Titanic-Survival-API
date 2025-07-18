@@ -42,6 +42,11 @@ class Config:
         os.environ["AWS_ENDPOINT_URL"] = f"http://localhost:{cls.DYNAMODB_PORT}"
 
 
+Config.setup_environment()
+
+from prediction_handler import lambda_handler
+
+
 class MockServerManager:
     """Gerenciador para o servidor Mock DynamoDB"""
 
@@ -87,15 +92,14 @@ class MockServerManager:
 
 def create_flask_app() -> Flask:
     """Factory function para criar a aplicação Flask"""
-    from prediction_handler import lambda_handler
 
     app = Flask(__name__)
 
-    @app.route("/sobreviventes", methods=["POST"])
-    def predict_survival():
+    @app.route("/sobreviventes", methods=["POST"], strict_slashes=False, defaults={"body": None})
+    def predict_survival(body=None):
         """Prediz sobrevivência de passageiros"""
         try:
-            mock_event = mock_post_passenger_event()
+            mock_event = mock_post_passenger_event(body=body)
 
             if request.is_json and request.json:
                 mock_event["body"] = request.get_data(as_text=True)
@@ -174,8 +178,6 @@ def initialize_database():
 def main():
     """Função principal para iniciar a aplicação"""
     print("🚀 Iniciando Titanic Survival API Mock...")
-
-    Config.setup_environment()
 
     mock_manager = MockServerManager()
 

@@ -1,27 +1,27 @@
 from src.models.passenger_request import PassengerRequest
 from src.models.error_response import StandardErrorResponse
-from src.models.api_response import HealthResponse, HealthStatus
+from src.services.predict_service import PredictionService
+from src.models.api_response import HealthResponse
 from src.controllers.passenger_controller import PassengerController
 from src.middleware.health_check import HealthCheck
 from src.logging.custom_logging import get_logger
 from src.adapter.http_adapter import HTTPAdapter
 from pydantic import ValidationError
 
-# Instanciar o controller fora da função para reutilizar entre chamadas
-# Isso evita recarregar o modelo a cada requisição (cold start optimization)
-passenger_controller = PassengerController()
+
+prediction_service = PredictionService(model_name="model", method="joblib")
+passenger_controller = PassengerController(prediction_service=prediction_service)
 
 
 def lambda_handler(event, _):
     """Função Lambda para lidar com requisições HTTP."""
     logger = get_logger()
-    
-    
+
     try:
         http_adapter = HTTPAdapter(event)
         http_method = http_adapter.method
 
-        event.pop("x-api-key")
+        event.pop("headers")
 
         logger.info(event)
 
@@ -41,10 +41,10 @@ def lambda_handler(event, _):
                 if len(predictions) == 1:
                     result = predictions[0].model_dump()
                     return http_adapter.build_standard_response(
-                        201, 
-                        result, 
+                        201,
+                        result,
                         request_id=http_adapter.request_id,
-                        message="Predição de sobrevivência realizada com sucesso"
+                        message="Predição de sobrevivência realizada com sucesso",
                     )
                 else:
                     results = [p.model_dump() for p in predictions]
@@ -52,32 +52,34 @@ def lambda_handler(event, _):
                         201,
                         results,
                         request_id=http_adapter.request_id,
-                        message="Predições de sobrevivência realizadas com sucesso"
+                        message="Predições de sobrevivência realizadas com sucesso",
                     )
 
             case "GET":
-                if http_adapter.path == "/health":
+                if http_adapter.path == "/v1/health":
                     health_check = HealthCheck()
                     health_status = health_check.get_overall_health()
-                    
+
                     health_response = HealthResponse(
                         overall_status=health_status.get("overall_status", "unhealthy"),
                         components=health_status.get("components", {}),
                         uptime=health_status.get("uptime"),
                     )
-                    
-                    status_code = 200 if health_status["overall_status"] == "healthy" else 503
+
+                    status_code = (
+                        200 if health_status["overall_status"] == "healthy" else 503
+                    )
 
                     health_response.metadata.request_id = http_adapter.request_id
 
                     return http_adapter.build_standard_response(
-                        status_code, 
+                        status_code,
                         health_response,
                         request_id=http_adapter.request_id,
-                        message="Status de saúde do serviço"
+                        message="Status de saúde do serviço",
                     )
-                    
-                elif http_adapter.path == "/sobreviventes":
+
+                elif http_adapter.path == "/v1/sobreviventes":
                     if http_adapter.query_parameters:
                         query_params = http_adapter.query_parameters
                         page = int(query_params.get("page", 1))
@@ -85,25 +87,27 @@ def lambda_handler(event, _):
                     else:
                         page, limit = 1, 10
 
-                    result = passenger_controller.get_all_passengers(page=page, limit=limit)
-                    
+                    result = passenger_controller.get_all_passengers(
+                        page=page, limit=limit
+                    )
+
                     if result.get("items"):
                         # Retornar com informação de paginação
                         response_data = {
                             "passengers": result["items"],
-                            "pagination": result["pagination"]
+                            "pagination": result["pagination"],
                         }
                         return http_adapter.build_standard_response(
-                            200, 
+                            200,
                             response_data,
                             request_id=http_adapter.request_id,
-                            message="Lista de passageiros recuperada com sucesso"
+                            message="Lista de passageiros recuperada com sucesso",
                         )
                     else:
                         return http_adapter.build_standard_response(
-                            404, 
+                            404,
                             {"error": "Nenhum passageiro encontrado"},
-                            request_id=http_adapter.request_id
+                            request_id=http_adapter.request_id,
                         )
 
                 elif http_adapter.resource == "/sobreviventes/{id}":
@@ -124,12 +128,19 @@ def lambda_handler(event, _):
                         return http_adapter.build_standard_response(
                             404, error_response, request_id=http_adapter.request_id
                         )
-                    
+
                     return http_adapter.build_standard_response(
-                        200, 
+                        200,
                         passenger,
                         request_id=http_adapter.request_id,
-                        message="Dados do passageiro recuperados com sucesso"
+                        message="Dados do passageiro recuperados com sucesso",
+                    )
+                else:
+                    error_response = StandardErrorResponse.business_error(
+                        "Endpoint não encontrado", 404
+                    )
+                    return http_adapter.build_standard_response(
+                        404, error_response, request_id=http_adapter.request_id
                     )
 
             case "DELETE":
@@ -144,13 +155,17 @@ def lambda_handler(event, _):
 
                 delete_result = passenger_controller.delete_passenger(passenger_id)
                 status_code = 200 if delete_result.deleted else 404
-                message = "Passageiro excluído com sucesso" if delete_result.deleted else "Passageiro não encontrado"
-                
+                message = (
+                    "Passageiro excluído com sucesso"
+                    if delete_result.deleted
+                    else "Passageiro não encontrado"
+                )
+
                 return http_adapter.build_standard_response(
-                    status_code, 
+                    status_code,
                     delete_result,
                     request_id=http_adapter.request_id,
-                    message=message
+                    message=message,
                 )
             case _:
                 error_response = StandardErrorResponse.business_error(
@@ -164,19 +179,23 @@ def lambda_handler(event, _):
         logger.error(f"Erro de validação: {str(ve)}")
         error_response = StandardErrorResponse.validation_error(ve.errors())
         return http_adapter.build_standard_response(
-            error_response.status_code, error_response, request_id=http_adapter.request_id
+            error_response.status_code,
+            error_response,
+            request_id=http_adapter.request_id,
         )
     except ValueError as ve:
         logger.error(f"Erro de validação: {str(ve)}")
         error_response = StandardErrorResponse.business_error(str(ve))
         return http_adapter.build_standard_response(
-            error_response.status_code, error_response, request_id=http_adapter.request_id
+            error_response.status_code,
+            error_response,
+            request_id=http_adapter.request_id,
         )
     except Exception as e:
         logger.error(f"Erro inesperado: {str(e)}")
         error_response = StandardErrorResponse.internal_error()
         return http_adapter.build_standard_response(
-            error_response.status_code, error_response, request_id=http_adapter.request_id
+            error_response.status_code,
+            error_response,
+            request_id=http_adapter.request_id,
         )
-
-

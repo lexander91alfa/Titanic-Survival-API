@@ -8,14 +8,16 @@ from src.models.error_response import StandardErrorResponse
 
 class HTTPAdapter:
     """
-    Adapta o evento do API Gateway para uma interface mais simples e
+    Adapta o evento do API Gateway v2.0 para uma interface mais simples e
     formata as respostas de volta para o formato esperado pela AWS.
     """
 
     def __init__(self, event: Dict[str, Any]):
         self._event = event
         self._body = None  # Cache para o corpo decodificado
-        self._request_id = str(uuid.uuid4())  # Gerar ID único para a requisição
+        self._request_id = self._event.get("requestContext", {}).get(
+            "requestId", str(uuid.uuid4())
+        )
 
     @property
     def request_id(self) -> str:
@@ -25,12 +27,12 @@ class HTTPAdapter:
     @property
     def method(self) -> Optional[str]:
         """Retorna o método HTTP da requisição."""
-        return self._event.get("httpMethod")
+        return self._event.get("requestContext", {}).get("http", {}).get("method")
 
     @property
     def path(self) -> Optional[str]:
         """Retorna o caminho (path) da requisição."""
-        return self._event.get("path")
+        return self._event.get("rawPath")
 
     @property
     def path_parameters(self) -> Dict[str, str]:
@@ -39,8 +41,8 @@ class HTTPAdapter:
 
     @property
     def resource(self) -> Optional[str]:
-        """Retorna o recurso da requisição."""
-        return self._event.get("resource")
+        """Retorna o recurso da requisição (routeKey)."""
+        return self._event.get("routeKey").split(" ")[1] if self._event.get("routeKey") else "N/A"
 
     @property
     def headers(self) -> Dict[str, str]:
@@ -50,7 +52,17 @@ class HTTPAdapter:
     @property
     def query_parameters(self) -> Dict[str, str]:
         """Retorna os parâmetros de consulta (query) como um dicionário."""
-        return self._event.get("queryStringParameters") or {}
+        raw_query = self._event.get("rawQueryString", "")
+        if not raw_query:
+            return {}
+
+        # Parse manual da query string
+        params = {}
+        for param in raw_query.split("&"):
+            if "=" in param:
+                key, value = param.split("=", 1)
+                params[key] = value
+        return params
 
     @property
     def body(self) -> Any:
@@ -61,13 +73,33 @@ class HTTPAdapter:
         if self._body is None:
             raw_body = self._event.get("body")
             if raw_body:
+                # Verificar se é base64 encoded
+                if self._event.get("isBase64Encoded", False):
+                    import base64
+
+                    try:
+                        raw_body = base64.b64decode(raw_body).decode("utf-8")
+                    except Exception:
+                        self._body = {}
+                        return self._body
+
                 try:
                     self._body = json.loads(raw_body)
                 except json.JSONDecodeError:
-                    self._body = {}  # Ou poderia levantar um erro aqui
+                    self._body = {}
             else:
                 self._body = {}
         return self._body
+
+    @property
+    def stage(self) -> Optional[str]:
+        """Retorna o stage da API."""
+        return self._event.get("requestContext", {}).get("stage")
+
+    @property
+    def version(self) -> Optional[str]:
+        """Retorna a versão do evento."""
+        return self._event.get("version")
 
     @staticmethod
     def build_response(status_code: int, body_data: Any) -> Dict[str, Any]:
@@ -101,7 +133,7 @@ class HTTPAdapter:
         message: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
-        Método estático para construir a resposta HTTP padronizada.
+        Método estático para construir a resposta HTTP padronizada para API Gateway v2.0.
         Converte modelos Pydantic para dicionários automaticamente.
         """
         # Se for um erro, manter o formato atual

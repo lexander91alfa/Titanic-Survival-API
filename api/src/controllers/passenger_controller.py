@@ -1,7 +1,6 @@
 from typing import List, Dict, Any
 from src.services.predict_service import PredictionService
 from src.models.passenger_request import PassengerRequest
-from src.models.prediction_response import PredictionResponse
 from src.models.api_response import (
     PredictionResult,
     PassengerDetail,
@@ -16,8 +15,8 @@ import math
 
 
 class PassengerController:
-    def __init__(self):
-        self.prediction_service = PredictionService(model_name="model.joblib", method="joblib")
+    def __init__(self, prediction_service: PredictionService):
+        self.prediction_service = prediction_service
         self.passenger_repository = PassengerRepository()
         self.logger = get_logger()
 
