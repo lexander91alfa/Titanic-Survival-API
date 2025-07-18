@@ -45,9 +45,9 @@ def passenger_repository(dynamodb_table):
 
 
 @fixture
-def passenger_controller(passenger_repository):
+def passenger_controller(passenger_repository, mock_prediction_service):
     """Fixture para criar a instância do controller com dependências mockadas."""
-    return PassengerController()
+    return PassengerController(prediction_service=mock_prediction_service())
 
 
 @fixture

@@ -33,43 +33,43 @@ class TestLambdaHandler:
     """Testes para o lambda_handler."""
 
     @pytest.fixture(autouse=True)
-    def setup_test_environment(self):
-        """Setup do ambiente de teste com todos os mocks necessários."""
-        with patch("src.repository.passenger_repository.boto3") as mock_boto3, patch(
-            "src.services.predict_service.PredictionService._load_model"
-        ) as mock_load_model, patch(
-            "prediction_handler.passenger_controller"
-        ) as mock_passenger_controller:
-
-            # Configurar mock do modelo
-            mock_model = MagicMock()
-            mock_model.predict_proba.return_value = [
-                [0.3, 0.7]
-            ]  # 70% chance de sobrevivência
-            mock_load_model.return_value = mock_model
-
-            # Configurar mock do DynamoDB
+    def setup_mocks(self):
+        """Setup dos mocks necessários para os testes."""
+        # Mock para o repositório
+        with patch("src.repository.passenger_repository.boto3") as mock_boto3:
             mock_table = MagicMock()
             mock_boto3.resource.return_value.Table.return_value = mock_table
+            yield mock_table
 
-            # Configurar mock do passenger_controller
+    @pytest.fixture(autouse=True)
+    def setup_prediction_service(self):
+        """Setup do serviço de predição."""
+        with patch("src.services.predict_service.PredictionService._load_model") as mock_load_model:
+            mock_model = MagicMock()
+            mock_model.predict_proba.return_value = [[0.3, 0.7]]  # 70% chance de sobrevivência
+            mock_load_model.return_value = mock_model
+            yield mock_model
+
+    @pytest.fixture(autouse=True)
+    def setup_controller(self):
+        """Setup do controller de passageiros."""
+        with patch("prediction_handler.passenger_controller") as mock_passenger_controller:
             self.mock_passenger_controller = mock_passenger_controller
-
-            yield
+            yield mock_passenger_controller
 
     def test_handler_post_success(self, passenger_repository):
         """
-        Testa o handler da Lambda com um evento POST válido, mockando as dependências.
+        Testa o handler da Lambda com um evento POST válido.
         """
-        # Configure the mocked passenger controller
-        mock_passenger = MagicMock()
-        mock_passenger.model_dump.return_value = {
+        # Arrange
+        mock_response = MagicMock()
+        mock_response.model_dump.return_value = {
             "passenger_id": "1",
             "survival_probability": 0.7,
             "prediction": "survived",
             "confidence_level": "medium",
         }
-        self.mock_passenger_controller.save_passenger.return_value = [mock_passenger]
+        self.mock_passenger_controller.save_passenger.return_value = [mock_response]
 
         test_event = {
             "httpMethod": "POST",
@@ -102,40 +102,40 @@ class TestLambdaHandler:
         """
         Testa se o handler retorna um erro 422 para uma requisição com dados inválidos.
         """
-
+        # Arrange
         test_event = {
             "httpMethod": "POST",
             "path": "/sobreviventes",
             "body": json.dumps({"Pclass": 99, "Sex": "alien", "Age": -10}),
         }
 
+        # Act
         response = lambda_handler(test_event, None)
 
+        # Assert
         assert response["statusCode"] == 422
         body = response["body"]
         assert body["error"] is True
+        assert "Validation error" in body["message"]
 
     def test_handler_post_multiple_passengers(self, passenger_repository):
         """Testa POST com múltiplos passageiros."""
-        # Configure the mocked passenger controller for multiple passengers
-        mock_passenger1 = MagicMock()
-        mock_passenger1.model_dump.return_value = {
-            "passenger_id": "1",
-            "survival_probability": 0.8,
-            "prediction": "survived",
-            "confidence_level": "high",
-        }
-        mock_passenger2 = MagicMock()
-        mock_passenger2.model_dump.return_value = {
-            "passenger_id": "2",
-            "survival_probability": 0.3,
-            "prediction": "not_survived",
-            "confidence_level": "medium",
-        }
-        self.mock_passenger_controller.save_passenger.return_value = [
-            mock_passenger1,
-            mock_passenger2,
+        # Arrange
+        mock_responses = [
+            MagicMock(model_dump=lambda: {
+                "passenger_id": "1",
+                "survival_probability": 0.8,
+                "prediction": "survived",
+                "confidence_level": "high",
+            }),
+            MagicMock(model_dump=lambda: {
+                "passenger_id": "2",
+                "survival_probability": 0.3,
+                "prediction": "not_survived",
+                "confidence_level": "medium",
+            })
         ]
+        self.mock_passenger_controller.save_passenger.return_value = mock_responses
 
         test_event = {
             "httpMethod": "POST",
@@ -178,18 +178,18 @@ class TestLambdaHandler:
 
     def test_handler_get_all_passengers(self, passenger_repository):
         """Testa GET para todos os passageiros."""
-        # Configure the mocked passenger controller to return dictionary structure like repository
+        # Arrange
         mock_result = {
             "items": [
                 {
                     "passenger_id": "1",
-                    "survival_probability": 0.8,
+                    "survival_probability": Decimal("0.8"),
                     "prediction": "survived",
                     "confidence_level": "high",
                 },
                 {
                     "passenger_id": "2",
-                    "survival_probability": 0.3,
+                    "survival_probability": Decimal("0.3"),
                     "prediction": "not_survived",
                     "confidence_level": "medium",
                 },
@@ -234,12 +234,14 @@ class TestLambdaHandler:
 
     def test_handler_get_passenger_by_id(self, passenger_repository):
         """Testa GET para um passageiro específico."""
-        # Configure the mocked passenger controller
+        # Arrange
         mock_passenger = {
             "passenger_id": "123",
-            "survival_probability": 0.75,
+            "survival_probability": Decimal("0.75"),
             "prediction": "survived",
             "confidence_level": "medium",
+            "created_at": "2025-07-17T10:00:00Z",
+            "updated_at": "2025-07-17T10:00:00Z"
         }
         self.mock_passenger_controller.get_passenger_by_id.return_value = mock_passenger
 
@@ -277,17 +279,16 @@ class TestLambdaHandler:
 
     def test_handler_delete_passenger(self, passenger_repository):
         """Testa DELETE de um passageiro."""
-        # Configure the mocked passenger controller
+        # Arrange
         from src.models.api_response import DeleteResponse
 
         mock_delete_response = DeleteResponse(
             deleted=True,
             passenger_id="456",
             message="Passageiro com ID 456 excluído com sucesso.",
+            deleted_at="2025-07-17T10:00:00Z"
         )
-        self.mock_passenger_controller.delete_passenger.return_value = (
-            mock_delete_response
-        )
+        self.mock_passenger_controller.delete_passenger.return_value = mock_delete_response
 
         test_event = {
             "httpMethod": "DELETE",
@@ -319,27 +320,35 @@ class TestLambdaHandler:
 
     def test_handler_health_check_endpoint(self, passenger_repository):
         """Testa endpoint de health check."""
+        # Arrange
         test_event = {
             "httpMethod": "GET",
             "path": "/health",
         }
 
+        mock_health_status = {
+            "overall_status": "healthy",
+            "model": {"status": "healthy", "message": "Model is working"},
+            "database": {"status": "healthy", "message": "Database is working"},
+        }
+
         with patch("prediction_handler.HealthCheck") as mock_health:
+            # Arrange
             mock_instance = MagicMock()
-            mock_instance.get_overall_health.return_value = {
-                "overall_status": "healthy",
-                "model": {"status": "healthy", "message": "Model is working"},
-                "database": {"status": "healthy", "message": "Database is working"},
-            }
+            mock_instance.get_overall_health.return_value = mock_health_status
             mock_health.return_value = mock_instance
 
+            # Act
             response = lambda_handler(test_event, None)
 
+            # Assert
             assert response["statusCode"] == 200
             body = response["body"]
             assert body["overall_status"] == "healthy"
             assert "components" in body
             assert "metadata" in body
+            assert body["components"]["model"]["status"] == "healthy"
+            assert body["components"]["database"]["status"] == "healthy"
 
     def test_handler_health_check_unhealthy(self, passenger_repository):
         """Testa endpoint de health check com sistema não saudável."""
@@ -371,9 +380,9 @@ class TestLambdaHandler:
 
     def test_handler_internal_server_error(self, passenger_repository):
         """Testa tratamento de erro interno do servidor."""
-        # Configure the mocked passenger controller to raise Exception
+        # Arrange
         self.mock_passenger_controller.save_passenger.side_effect = Exception(
-            "Internal error"
+            "Erro interno do servidor"
         )
 
         test_event = {

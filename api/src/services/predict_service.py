@@ -22,7 +22,6 @@ class PredictionService:
             model_name (str): O nome do modelo (usado para formar o caminho do arquivo).
             method (str): Método de carregamento ('joblib' ou 'pickle').
         """
-        # Verificar se está rodando no Lambda (onde a layer está em /opt/python)
         if os.path.exists("/opt/python/modelos"):
             self.model_path = os.path.join("/opt/python/modelos", f"{model_name}")
         else:
