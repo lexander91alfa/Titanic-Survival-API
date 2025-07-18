@@ -29,4 +29,12 @@ locals {
         Environment = local.environment
         Project     = local.project_name
     }
+
+    endpoints = {
+        sobreviventes_post    = { resource = aws_api_gateway_resource.sobreviventes.id, http_method = "POST" }
+        sobreviventes_get     = { resource = aws_api_gateway_resource.sobreviventes.id, http_method = "GET" }
+        sobreviventes_id_get  = { resource = aws_api_gateway_resource.sobreviventes_id.id, http_method = "GET" }
+        sobreviventes_id_delete = { resource = aws_api_gateway_resource.sobreviventes_id.id, http_method = "DELETE" }
+        health_get          = { resource = aws_api_gateway_resource.health.id, http_method = "GET", api_key_required = false }
+    }
 }

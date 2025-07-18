@@ -1,6 +1,7 @@
 import json
 import uuid
-from typing import Dict, Any, Optional, Union
+from typing import Dict, Any, Optional
+
 from pydantic import BaseModel
 from src.models.api_response import StandardSuccessResponse, APIMetadata, HealthResponse
 from src.models.error_response import StandardErrorResponse
@@ -8,7 +9,7 @@ from src.models.error_response import StandardErrorResponse
 
 class HTTPAdapter:
     """
-    Adapta o evento do API Gateway v2.0 para uma interface mais simples e
+    Adapta o evento do API Gateway v1.0 (REST API) para uma interface mais simples e
     formata as respostas de volta para o formato esperado pela AWS.
     """
 
@@ -27,12 +28,12 @@ class HTTPAdapter:
     @property
     def method(self) -> Optional[str]:
         """Retorna o método HTTP da requisição."""
-        return self._event.get("requestContext", {}).get("http", {}).get("method")
+        return self._event.get("httpMethod")
 
     @property
     def path(self) -> Optional[str]:
         """Retorna o caminho (path) da requisição."""
-        return self._event.get("rawPath")
+        return self._event.get("path")
 
     @property
     def path_parameters(self) -> Dict[str, str]:
@@ -41,12 +42,8 @@ class HTTPAdapter:
 
     @property
     def resource(self) -> Optional[str]:
-        """Retorna o recurso da requisição (routeKey)."""
-        return (
-            self._event.get("routeKey").split(" ")[1]
-            if self._event.get("routeKey")
-            else "N/A"
-        )
+        """Retorna o recurso da requisição."""
+        return self._event.get("resource")
 
     @property
     def headers(self) -> Dict[str, str]:
@@ -56,17 +53,7 @@ class HTTPAdapter:
     @property
     def query_parameters(self) -> Dict[str, str]:
         """Retorna os parâmetros de consulta (query) como um dicionário."""
-        raw_query = self._event.get("rawQueryString", "")
-        if not raw_query:
-            return {}
-
-        # Parse manual da query string
-        params = {}
-        for param in raw_query.split("&"):
-            if "=" in param:
-                key, value = param.split("=", 1)
-                params[key] = value
-        return params
+        return self._event.get("queryStringParameters") or {}
 
     @property
     def body(self) -> Any:
@@ -77,7 +64,6 @@ class HTTPAdapter:
         if self._body is None:
             raw_body = self._event.get("body")
             if raw_body:
-                # Verificar se é base64 encoded
                 if self._event.get("isBase64Encoded", False):
                     import base64
 
@@ -88,8 +74,9 @@ class HTTPAdapter:
                         return self._body
 
                 try:
-                    self._body = json.loads(raw_body)
-                except json.JSONDecodeError:
+                    # O corpo pode já ser um dict se não for base64, mas a conversão é segura
+                    self._body = json.loads(raw_body) if isinstance(raw_body, str) else raw_body
+                except (json.JSONDecodeError, TypeError):
                     self._body = {}
             else:
                 self._body = {}
@@ -99,11 +86,6 @@ class HTTPAdapter:
     def stage(self) -> Optional[str]:
         """Retorna o stage da API."""
         return self._event.get("requestContext", {}).get("stage")
-
-    @property
-    def version(self) -> Optional[str]:
-        """Retorna a versão do evento."""
-        return self._event.get("version")
 
     @staticmethod
     def build_response(status_code: int, body_data: Any) -> Dict[str, Any]:
@@ -137,39 +119,28 @@ class HTTPAdapter:
         message: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
-        Método estático para construir a resposta HTTP padronizada para API Gateway v2.0.
+        Método estático para construir a resposta HTTP padronizada para API Gateway.
         Converte modelos Pydantic para dicionários automaticamente.
         """
-        # ... (toda a sua lógica if/elif/else para criar o body_content permanece a mesma) ...
-        if isinstance(body_data, StandardErrorResponse):
-            body_content = body_data.model_dump()
-        elif isinstance(body_data, HealthResponse):
+        body_content = {}
+        if isinstance(body_data, (StandardErrorResponse, HealthResponse)):
             body_content = body_data.model_dump()
         elif isinstance(body_data, dict) and body_data.get("error") is True:
             body_content = body_data
         elif status_code >= 400:
-            if isinstance(body_data, BaseModel):
-                body_content = body_data.model_dump()
-            else:
-                body_content = body_data
+            body_content = body_data.model_dump() if isinstance(body_data, BaseModel) else body_data
         else:
-            metadata = APIMetadata()
-            if request_id:
-                metadata.request_id = request_id
+            metadata = APIMetadata(request_id=request_id or str(uuid.uuid4()))
+            
             if not message:
-                if status_code == 200:
-                    message = "Operação realizada com sucesso"
-                elif status_code == 201:
-                    message = "Recurso criado com sucesso"
-                elif status_code == 204:
-                    message = "Operação realizada com sucesso"
-                else:
-                    message = "Operação concluída"
+                message_map = {
+                    200: "Operação realizada com sucesso",
+                    201: "Recurso criado com sucesso",
+                    204: "Operação realizada com sucesso",
+                }
+                message = message_map.get(status_code, "Operação concluída")
 
-            if isinstance(body_data, BaseModel):
-                data = body_data.model_dump()
-            else:
-                data = body_data
+            data = body_data.model_dump() if isinstance(body_data, BaseModel) else body_data
 
             success_response = StandardSuccessResponse(
                 message=message, data=data, metadata=metadata
@@ -185,6 +156,5 @@ class HTTPAdapter:
                 "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
                 "X-Request-ID": request_id or str(uuid.uuid4()),
             },
-            # ✅ ALTERAÇÃO AQUI: Serializar o dicionário para uma string JSON
             "body": json.dumps(body_content, ensure_ascii=False, default=str),
         }

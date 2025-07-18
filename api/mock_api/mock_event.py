@@ -1,204 +1,161 @@
-from flask import json
+import json
+import base64
+
+
+def _get_common_context(http_method, path, resource_path):
+    """Helper to create a common request context for v1.0 payload."""
+    return {
+        "accountId": "123456789012",
+        "resourceId": "123456",
+        "stage": "prod",
+        "requestId": "c6af9ac6-7b61-11e6-9a41-93e8deadbeef",
+        "requestTime": "09/Apr/2015:12:34:56 +0000",
+        "requestTimeEpoch": 1428582896000,
+        "identity": {
+            "cognitoIdentityPoolId": None,
+            "accountId": None,
+            "cognitoIdentityId": None,
+            "caller": None,
+            "accessKey": None,
+            "sourceIp": "127.0.0.1",
+            "cognitoAuthenticationType": None,
+            "cognitoAuthenticationProvider": None,
+            "userArn": None,
+            "userAgent": "Custom User Agent String",
+            "user": None,
+        },
+        "path": f"/prod{path}",
+        "resourcePath": resource_path,
+        "httpMethod": http_method,
+        "apiId": "1234567890",
+        "protocol": "HTTP/1.1",
+    }
+
+
+def _get_common_headers():
+    """Helper to create common headers."""
+    headers = {
+        "Accept": "application/json",
+        "Accept-Encoding": "gzip, deflate",
+        "Content-Type": "application/json",
+        "Host": "1234567890.execute-api.us-east-1.amazonaws.com",
+        "User-Agent": "python-requests/2.32.3",
+        "X-Forwarded-For": "127.0.0.1",
+        "X-Forwarded-Port": "443",
+        "X-Forwarded-Proto": "https",
+    }
+    return headers, {k: [v] for k, v in headers.items()}
 
 
 def mock_post_passenger_event(body=None):
+    path = "/sobreviventes"
+    resource_path = "/sobreviventes"
+    http_method = "POST"
+    headers, multi_value_headers = _get_common_headers()
+
+    body_str = json.dumps(body) if body else None
+
     return {
-        "version": "2.0",
-        "routeKey": "POST /sobreviventes",
-        "rawPath": "/v1/sobreviventes",
-        "rawQueryString": "",
-        "headers": {
-            "accept": "*/*",
-            "accept-encoding": "gzip, deflate",
-            "content-length": "122",
-            "content-type": "application/json",
-            "host": "rdogk5v2d1.execute-api.us-east-1.amazonaws.com",
-            "user-agent": "python-requests/2.32.3",
-            "x-amzn-trace-id": "Root=1-6876633a-262e912431c96d923dc306d2",
-            "x-forwarded-for": "200.219.59.245",
-            "x-forwarded-port": "443",
-            "x-forwarded-proto": "https",
-        },
-        "requestContext": {
-            "accountId": "876042377474",
-            "apiId": "rdogk5v2d1",
-            "domainName": "rdogk5v2d1.execute-api.us-east-1.amazonaws.com",
-            "domainPrefix": "rdogk5v2d1",
-            "http": {
-                "method": "POST",
-                "path": "/v1/sobreviventes",
-                "protocol": "HTTP/1.1",
-                "sourceIp": "200.219.59.245",
-                "userAgent": "python-requests/2.32.3",
-            },
-            "requestId": "NwRxKjwmoAMEbPA=",
-            "routeKey": "POST /sobreviventes",
-            "stage": "v1",
-            "time": "15/Jul/2025:14:18:34 +0000",
-            "timeEpoch": 1752589114233,
-        },
-        "body": json.dumps(body) if body else json.dumps({}),
+        "body": body_str,
+        "resource": resource_path,
+        "path": path,
+        "httpMethod": http_method,
         "isBase64Encoded": False,
+        "queryStringParameters": None,
+        "multiValueQueryStringParameters": None,
+        "pathParameters": None,
+        "stageVariables": None,
+        "headers": headers,
+        "multiValueHeaders": multi_value_headers,
+        "requestContext": _get_common_context(http_method, path, resource_path),
     }
 
 
 def mock_get_all_passengers_event():
+    path = "/sobreviventes"
+    resource_path = "/sobreviventes"
+    http_method = "GET"
+    headers, multi_value_headers = _get_common_headers()
+
     return {
-        "version": "2.0",
-        "routeKey": "GET /sobreviventes",
-        "rawPath": "/v1/sobreviventes",
-        "rawQueryString": "",
-        "headers": {
-            "accept": "*/*",
-            "accept-encoding": "gzip, deflate",
-            "content-length": "0",
-            "content-type": "application/json",
-            "host": "rdogk5v2d1.execute-api.us-east-1.amazonaws.com",
-            "user-agent": "python-requests/2.32.3",
-            "x-amzn-trace-id": "Root=1-6876649f-338dfe1f44fd9d485117edd5",
-            "x-forwarded-for": "200.219.59.245",
-            "x-forwarded-port": "443",
-            "x-forwarded-proto": "https",
-        },
-        "requestContext": {
-            "accountId": "876042377474",
-            "apiId": "rdogk5v2d1",
-            "domainName": "rdogk5v2d1.execute-api.us-east-1.amazonaws.com",
-            "domainPrefix": "rdogk5v2d1",
-            "http": {
-                "method": "GET",
-                "path": "/v1/sobreviventes",
-                "protocol": "HTTP/1.1",
-                "sourceIp": "200.219.59.245",
-                "userAgent": "python-requests/2.32.3",
-            },
-            "requestId": "NwSo_j_qIAMEJfg=",
-            "routeKey": "GET /sobreviventes",
-            "stage": "v1",
-            "time": "15/Jul/2025:14:24:31 +0000",
-            "timeEpoch": 1752589471551,
-        },
+        "body": None,
+        "resource": resource_path,
+        "path": path,
+        "httpMethod": http_method,
         "isBase64Encoded": False,
+        "queryStringParameters": None,
+        "multiValueQueryStringParameters": None,
+        "pathParameters": None,
+        "stageVariables": None,
+        "headers": headers,
+        "multiValueHeaders": multi_value_headers,
+        "requestContext": _get_common_context(http_method, path, resource_path),
     }
 
 
 def mock_get_passenger_by_id_event(passenger_id):
+    path = f"/sobreviventes/{passenger_id}"
+    resource_path = "/sobreviventes/{id}"
+    http_method = "GET"
+    headers, multi_value_headers = _get_common_headers()
+    path_params = {"id": str(passenger_id)}
+
     return {
-        "version": "2.0",
-        "routeKey": "GET /sobreviventes/{id}",
-        "rawPath": f"/v1/sobreviventes/{passenger_id}",
-        "rawQueryString": "",
-        "headers": {
-            "accept": "*/*",
-            "accept-encoding": "gzip, deflate",
-            "content-length": "0",
-            "content-type": "application/json",
-            "host": "rdogk5v2d1.execute-api.us-east-1.amazonaws.com",
-            "user-agent": "python-requests/2.32.3",
-            "x-amzn-trace-id": "Root=1-68766492-31e2ff5e2a1e2d8356993036",
-            "x-forwarded-for": "200.219.59.245",
-            "x-forwarded-port": "443",
-            "x-forwarded-proto": "https",
-        },
-        "requestContext": {
-            "accountId": "876042377474",
-            "apiId": "rdogk5v2d1",
-            "domainName": "rdogk5v2d1.execute-api.us-east-1.amazonaws.com",
-            "domainPrefix": "rdogk5v2d1",
-            "http": {
-                "method": "GET",
-                "path": f"/v1/sobreviventes/{passenger_id}",
-                "protocol": "HTTP/1.1",
-                "sourceIp": "200.219.59.245",
-                "userAgent": "python-requests/2.32.3",
-            },
-            "requestId": "NwSm7hCmIAMEcPw=",
-            "routeKey": "GET /sobreviventes/{id}",
-            "stage": "v1",
-            "time": "15/Jul/2025:14:24:18 +0000",
-            "timeEpoch": 1752589458387,
-        },
-        "pathParameters": {"id": str(passenger_id)},
+        "body": None,
+        "resource": resource_path,
+        "path": path,
+        "httpMethod": http_method,
         "isBase64Encoded": False,
+        "queryStringParameters": None,
+        "multiValueQueryStringParameters": None,
+        "pathParameters": path_params,
+        "stageVariables": None,
+        "headers": headers,
+        "multiValueHeaders": multi_value_headers,
+        "requestContext": _get_common_context(http_method, path, resource_path),
     }
 
 
 def mock_delete_passenger_event(passenger_id):
+    path = f"/sobreviventes/{passenger_id}"
+    resource_path = "/sobreviventes/{id}"
+    http_method = "DELETE"
+    headers, multi_value_headers = _get_common_headers()
+    path_params = {"id": str(passenger_id)}
+
     return {
-        "version": "2.0",
-        "routeKey": "DELETE /sobreviventes/{id}",
-        "rawPath": f"/v1/sobreviventes/{passenger_id}",
-        "rawQueryString": "",
-        "headers": {
-            "accept": "*/*",
-            "accept-encoding": "gzip, deflate",
-            "content-length": "0",
-            "content-type": "application/json",
-            "host": "rdogk5v2d1.execute-api.us-east-1.amazonaws.com",
-            "user-agent": "python-requests/2.32.3",
-            "x-amzn-trace-id": "Root=1-68766487-63e4f1226255cf70628e57c2",
-            "x-forwarded-for": "200.219.59.245",
-            "x-forwarded-port": "443",
-            "x-forwarded-proto": "https",
-        },
-        "requestContext": {
-            "accountId": "876042377474",
-            "apiId": "rdogk5v2d1",
-            "domainName": "rdogk5v2d1.execute-api.us-east-1.amazonaws.com",
-            "domainPrefix": "rdogk5v2d1",
-            "http": {
-                "method": "DELETE",
-                "path": f"/v1/sobreviventes/{passenger_id}",
-                "protocol": "HTTP/1.1",
-                "sourceIp": "200.219.59.245",
-                "userAgent": "python-requests/2.32.3",
-            },
-            "requestId": "NwSlTh0uoAMEcFg=",
-            "routeKey": "DELETE /sobreviventes/{id}",
-            "stage": "v1",
-            "time": "15/Jul/2025:14:24:07 +0000",
-            "timeEpoch": 1752589447974,
-        },
-        "pathParameters": {"id": str(passenger_id)},
+        "body": None,
+        "resource": resource_path,
+        "path": path,
+        "httpMethod": http_method,
         "isBase64Encoded": False,
+        "queryStringParameters": None,
+        "multiValueQueryStringParameters": None,
+        "pathParameters": path_params,
+        "stageVariables": None,
+        "headers": headers,
+        "multiValueHeaders": multi_value_headers,
+        "requestContext": _get_common_context(http_method, path, resource_path),
     }
 
 
 def mock_health_check_event():
+    path = "/health"
+    resource_path = "/health"
+    http_method = "GET"
+    headers, multi_value_headers = _get_common_headers()
+
     return {
-        "version": "2.0",
-        "routeKey": "GET /health",
-        "rawPath": "/v1/health",
-        "rawQueryString": "",
-        "headers": {
-            "accept": "*/*",
-            "accept-encoding": "gzip, deflate",
-            "content-length": "0",
-            "content-type": "application/json",
-            "host": "rdogk5v2d1.execute-api.us-east-1.amazonaws.com",
-            "user-agent": "python-requests/2.32.3",
-            "x-amzn-trace-id": "Root=1-6876649f-338dfe1f44fd9d485117edd5",
-            "x-forwarded-for": "200.219.59.245",
-            "x-forwarded-port": "443",
-            "x-forwarded-proto": "https",
-        },
-        "requestContext": {
-            "accountId": "876042377474",
-            "apiId": "rdogk5v2d1",
-            "domainName": "rdogk5v2d1.execute-api.us-east-1.amazonaws.com",
-            "domainPrefix": "rdogk5v2d1",
-            "http": {
-                "method": "GET",
-                "path": "/v1/health",
-                "protocol": "HTTP/1.1",
-                "sourceIp": "200.219.59.245",
-                "userAgent": "python-requests/2.32.3",
-            },
-            "requestId": "NwSo_j_qIAMEJfg=",
-            "routeKey": "GET /health",
-            "stage": "v1",
-            "time": "15/Jul/2025:14:24:31 +0000",
-            "timeEpoch": 1752589471551,
-        },
+        "body": None,
+        "resource": resource_path,
+        "path": path,
+        "httpMethod": http_method,
         "isBase64Encoded": False,
+        "queryStringParameters": None,
+        "multiValueQueryStringParameters": None,
+        "pathParameters": None,
+        "stageVariables": None,
+        "headers": headers,
+        "multiValueHeaders": multi_value_headers,
+        "requestContext": _get_common_context(http_method, path, resource_path),
     }

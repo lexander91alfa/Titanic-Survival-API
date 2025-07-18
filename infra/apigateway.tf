@@ -15,113 +15,46 @@ resource "aws_api_gateway_rest_api" "api" {
 resource "aws_api_gateway_resource" "sobreviventes" {
   rest_api_id = aws_api_gateway_rest_api.api.id
   parent_id   = aws_api_gateway_rest_api.api.root_resource_id
-  path_part   = "/sobreviventes"
+  path_part   = "sobreviventes"
 }
 
 resource "aws_api_gateway_resource" "sobreviventes_id" {
   rest_api_id = aws_api_gateway_rest_api.api.id
   parent_id   = aws_api_gateway_resource.sobreviventes.id
-  path_part   = "/{id}"
+  path_part   = "{id}"
 }
 
 resource "aws_api_gateway_resource" "health" {
   rest_api_id = aws_api_gateway_rest_api.api.id
   parent_id   = aws_api_gateway_rest_api.api.root_resource_id
-  path_part   = "/health"
+  path_part   = "health"
 }
 
 # ===================================================================
 # API Methods
 # ===================================================================
 
-resource "aws_api_gateway_method" "sobreviventes" {
-  rest_api_id   = aws_api_gateway_rest_api.api.id
-  resource_id   = aws_api_gateway_resource.sobreviventes.id
-  http_method   = "POST"
-  authorization = "NONE"
-  api_key_required = true
-}
+resource "aws_api_gateway_method" "all" {
+  for_each = local.endpoints
 
-resource "aws_api_gateway_method" "sobreviventes_get" {
   rest_api_id   = aws_api_gateway_rest_api.api.id
-  resource_id   = aws_api_gateway_resource.sobreviventes.id
-  http_method   = "POST"
+  resource_id   = each.value.resource
+  http_method   = each.value.http_method
   authorization = "NONE"
-  api_key_required = true
-}
-
-resource "aws_api_gateway_method" "sobreviventes_id" {
-  rest_api_id   = aws_api_gateway_rest_api.api.id
-  resource_id   = aws_api_gateway_resource.sobreviventes_id.id
-  http_method   = "POST"
-  authorization = "NONE"
-  api_key_required = true
-}
-
-resource "aws_api_gateway_method" "health" {
-  rest_api_id   = aws_api_gateway_rest_api.api.id
-  resource_id   = aws_api_gateway_resource.health.id
-  http_method   = "POST"
-  authorization = "NONE"
-  api_key_required = true
-}
-resource "aws_api_gateway_method" "sobreviventes_id_delete" {
-  rest_api_id   = aws_api_gateway_rest_api.api.id
-  resource_id   = aws_api_gateway_resource.sobreviventes_id.id
-  http_method   = "POST"
-  authorization = "NONE"
-  api_key_required = true
+  api_key_required = lookup(each.value, "api_key_required", true)
 }
 
 # ===================================================================
 # API Integrations
 # ===================================================================
 
-resource "aws_api_gateway_integration" "sobreviventes_post" {
-  rest_api_id = aws_api_gateway_rest_api.api.id
-  resource_id = aws_api_gateway_resource.sobreviventes.id
-  http_method = aws_api_gateway_method.sobreviventes.http_method
+resource "aws_api_gateway_integration" "all" {
+  for_each = local.endpoints
 
+  rest_api_id             = aws_api_gateway_rest_api.api.id
+  resource_id             = each.value.resource
+  http_method             = aws_api_gateway_method.all[each.key].http_method
   integration_http_method = "POST"
-  type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.prediction.invoke_arn
-}
-resource "aws_api_gateway_integration" "sobreviventes_get" {
-  rest_api_id = aws_api_gateway_rest_api.api.id
-  resource_id = aws_api_gateway_resource.sobreviventes.id
-  http_method = aws_api_gateway_method.sobreviventes_get.http_method
-
-  integration_http_method = "GET"
-  type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.prediction.invoke_arn
-}
-
-resource "aws_api_gateway_integration" "sobreviventes_id_get" {
-  rest_api_id = aws_api_gateway_rest_api.api.id
-  resource_id = aws_api_gateway_resource.sobreviventes_id.id
-  http_method = aws_api_gateway_method.sobreviventes_id.http_method
-
-  integration_http_method = "GET"
-  type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.prediction.invoke_arn
-}
-
-resource "aws_api_gateway_integration" "health" {
-  rest_api_id = aws_api_gateway_rest_api.api.id
-  resource_id = aws_api_gateway_resource.health.id
-  http_method = aws_api_gateway_method.health.http_method
-
-  integration_http_method = "GET"
-  type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.prediction.invoke_arn
-}
-
-resource "aws_api_gateway_integration" "sobreviventes_id_delete" {
-  rest_api_id = aws_api_gateway_rest_api.api.id
-  resource_id = aws_api_gateway_resource.sobreviventes_id.id
-  http_method = aws_api_gateway_method.sobreviventes_id_delete.http_method
-
-  integration_http_method = "DELETE"
   type                    = "AWS_PROXY"
   uri                     = aws_lambda_function.prediction.invoke_arn
 }
@@ -131,17 +64,13 @@ resource "aws_api_gateway_integration" "sobreviventes_id_delete" {
 # ===================================================================
 
 resource "aws_api_gateway_deployment" "api_deployment" {
-  depends_on = [
-    aws_api_gateway_integration.sobreviventes_post,
-    aws_api_gateway_integration.sobreviventes_get,
-    aws_api_gateway_integration.sobreviventes_id_get,
-    aws_api_gateway_integration.health,
-    aws_api_gateway_integration.sobreviventes_id_delete
-  ]
-
   rest_api_id = aws_api_gateway_rest_api.api.id
   description = "Deployment for v1 stage"
-  
+
+  triggers = {
+    redeployment = sha1(jsonencode(values(aws_api_gateway_integration.all)[*].id))
+  }
+
   lifecycle {
     create_before_destroy = true
   }

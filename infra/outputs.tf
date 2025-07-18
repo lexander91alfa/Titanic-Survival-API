@@ -3,6 +3,11 @@ output "api_base_url" {
   value       = "https://${aws_api_gateway_rest_api.api.id}.execute-api.${data.aws_region.current.region}.amazonaws.com/${aws_api_gateway_stage.api_stage.stage_name}"
 }
 
+output "api_invoke_url" {
+  description = "A URL de invocação para o stage da API."
+  value       = aws_api_gateway_stage.api_stage.invoke_url
+}
+
 output "dynamodb_table_name" {
   description = "Name of the DynamoDB table"
   value       = aws_dynamodb_table.passengers.name

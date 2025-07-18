@@ -56,7 +56,7 @@ def lambda_handler(event, _):
                     )
 
             case "GET":
-                if http_adapter.path == "/v1/health":
+                if http_adapter.path == "/health":
                     health_check = HealthCheck()
                     health_status = health_check.get_overall_health()
 
@@ -79,7 +79,7 @@ def lambda_handler(event, _):
                         message="Status de saúde do serviço",
                     )
 
-                elif http_adapter.path == "/v1/sobreviventes":
+                elif http_adapter.path == "/sobreviventes":
                     if http_adapter.query_parameters:
                         query_params = http_adapter.query_parameters
                         page = int(query_params.get("page", 1))
