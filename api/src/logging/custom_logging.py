@@ -29,15 +29,20 @@ def get_logger(type_logger="console", level=INFO) -> Logger:
     """
     formatter = CustomFormatter()
     logger = getLogger(str(uuid4()))
-    logger.setLevel(level)
+    
+    logger.propagate = False
+    
     if logger.hasHandlers():
         logger.handlers.clear()
+
+    logger.propagate = False
 
     if type_logger == "console":
         handler = StreamHandler()
         handler.setLevel(level)
         handler.setFormatter(formatter)
         logger.addHandler(handler)
+        
     else:
         if not path.exists("./logs"):
             makedirs("./logs")
