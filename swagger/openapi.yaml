@@ -1,0 +1,399 @@
+openapi: 3.1.0
+info:
+  title: API de Predição de Sobrevivência - Titanic
+  description: |-
+    API para submeter características de passageiros do Titanic e receber a probabilidade de sobrevivência.
+    A API utiliza um formato de resposta padrão para sucesso e erro, e suporta operações em lote.
+  version: 1.0.0
+servers:
+  - url: /v1
+    description: API Gateway Stage v1
+security:
+  - ApiKeyAuth: []
+
+tags:
+  - name: Predições
+    description: Operações para criar e consultar predições de sobrevivência.
+  - name: Monitoramento
+    description: Endpoints para verificação de saúde e status da API.
+
+paths:
+  /sobreviventes:
+    post:
+      tags:
+        - Predições
+      summary: Cria uma ou mais predições para passageiros
+      description: |-
+        Submete os dados de um ou mais passageiros e retorna a probabilidade de sobrevivência e um ID único para cada um.
+        Para criar em lote, envie um array de objetos de passageiro no corpo da requisição.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/PassengerRequest'
+                - type: array
+                  items:
+                    $ref: '#/components/schemas/PassengerRequest'
+            examples:
+              single:
+                summary: Requisição para um único passageiro
+                value:
+                  Pclass: 3
+                  Sex: "male"
+                  Age: 22
+                  SibSp: 1
+                  Parch: 0
+                  Fare: 7.25
+              batch:
+                summary: Requisição em lote para múltiplos passageiros
+                value:
+                  - Pclass: 1
+                    Sex: "female"
+                    Age: 38
+                    SibSp: 1
+                    Parch: 0
+                    Fare: 71.28
+                  - Pclass: 3
+                    Sex: "male"
+                    Age: 35
+                    SibSp: 0
+                    Parch: 0
+                    Fare: 8.05
+      responses:
+        '201':
+          description: Predição(ões) criada(s) com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccessResponse'
+              examples:
+                single:
+                  summary: Resposta para um único passageiro
+                  value:
+                    message: "Predição de sobrevivência realizada com sucesso"
+                    data:
+                      id: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+                      probability: 0.156
+                    metadata:
+                      request_id: "uuid-request-123"
+                batch:
+                  summary: Resposta para múltiplos passageiros
+                  value:
+                    message: "Predições de sobrevivência realizadas com sucesso"
+                    data:
+                      - id: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+                        probability: 0.901
+                      - id: "b2c3d4e5-f6a7-8901-2345-67890abcdef1"
+                        probability: 0.203
+                    metadata:
+                      request_id: "uuid-request-456"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    get:
+      tags:
+        - Predições
+      summary: Lista todas as predições de passageiros com paginação
+      description: Retorna uma lista paginada de todas as predições de sobrevivência armazenadas.
+      parameters:
+        - name: page
+          in: query
+          description: Número da página a ser retornada.
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: limit
+          in: query
+          description: Número de itens por página.
+          required: false
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Lista paginada de passageiros e suas predições.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccessResponse'
+              examples:
+                success:
+                  value:
+                    message: "Lista de passageiros recuperada com sucesso"
+                    data:
+                      passengers:
+                        - id: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+                          probability: 0.156
+                          input_data:
+                            Pclass: 3
+                            Sex: "male"
+                            Age: 22
+                            SibSp: 1
+                            Parch: 0
+                            Fare: 7.25
+                      pagination:
+                        total_items: 100
+                        total_pages: 10
+                        current_page: 1
+                        page_size: 10
+                    metadata:
+                      request_id: "uuid-request-789"
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /sobreviventes/{id}:
+    parameters:
+      - name: id
+        in: path
+        description: ID único da predição do passageiro.
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags:
+        - Predições
+      summary: Retorna a predição de um passageiro específico
+      description: Consulta e retorna os dados de uma predição de sobrevivência pelo seu ID.
+      responses:
+        '200':
+          description: Dados da predição do passageiro.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccessResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags:
+        - Predições
+      summary: Deleta a predição de um passageiro
+      description: Remove uma predição de sobrevivência do sistema pelo seu ID.
+      responses:
+        '200':
+          description: Passageiro deletado com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccessResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /health:
+    get:
+      tags:
+        - Monitoramento
+      summary: Verifica a saúde da API
+      description: Retorna o status de saúde da API e de seus componentes, como o modelo de ML e o banco de dados.
+      responses:
+        '200':
+          description: A API está saudável.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: A API ou um de seus componentes não está saudável.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+components:
+  schemas:
+    # --- Modelos de Requisição ---
+    PassengerRequest:
+      type: object
+      required:
+        - Pclass
+        - Sex
+        - Age
+        - SibSp
+        - Parch
+        - Fare
+      properties:
+        Pclass:
+          type: integer
+          description: Classe do ticket (1 = 1ª, 2 = 2ª, 3 = 3ª).
+          example: 3
+        Sex:
+          type: string
+          description: Sexo do passageiro.
+          enum: ["male", "female"]
+          example: "male"
+        Age:
+          type: number
+          description: Idade em anos.
+          example: 22
+        SibSp:
+          type: integer
+          description: Número de irmãos ou cônjuges a bordo.
+          example: 1
+        Parch:
+          type: integer
+          description: Número de pais ou filhos a bordo.
+          example: 0
+        Fare:
+          type: number
+          description: Tarifa do passageiro.
+          example: 7.25
+
+    # --- Modelos de Resposta de Dados ---
+    PassengerResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: ID único da predição.
+        probability:
+          type: number
+          format: float
+          description: Probabilidade de sobrevivência (de 0.0 a 1.0).
+
+    PassengerStored:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: ID único da predição.
+        probability:
+          type: number
+          format: float
+          description: Probabilidade de sobrevivência.
+        input_data:
+          $ref: '#/components/schemas/PassengerRequest'
+    
+    DeleteResponse:
+      type: object
+      properties:
+        deleted:
+          type: boolean
+          description: Indica se o recurso foi deletado com sucesso.
+          example: true
+    
+    PaginatedPassengers:
+      type: object
+      properties:
+        passengers:
+          type: array
+          items:
+            $ref: '#/components/schemas/PassengerStored'
+        pagination:
+          $ref: '#/components/schemas/PaginationDetails'
+          
+    PaginationDetails:
+      type: object
+      properties:
+        total_items:
+          type: integer
+        total_pages:
+          type: integer
+        current_page:
+          type: integer
+        page_size:
+          type: integer
+
+    # --- Respostas Padronizadas (Wrappers) ---
+    StandardSuccessResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Operação realizada com sucesso"
+        data:
+          type: object
+          description: O payload de dados da resposta. Pode ser um objeto ou um array.
+        metadata:
+          $ref: '#/components/schemas/APIMetadata'
+
+    StandardErrorResponse:
+      type: object
+      properties:
+        error:
+          type: boolean
+          example: true
+        type:
+          type: string
+          example: "BUSINESS_ERROR"
+        message:
+          type: string
+          example: "Passageiro não encontrado"
+        details:
+          type: array
+          items:
+            type: object
+        status_code:
+          type: integer
+          example: 404
+        request_id:
+          type: string
+          format: uuid
+
+    APIMetadata:
+      type: object
+      properties:
+        request_id:
+          type: string
+          format: uuid
+          description: ID único da requisição para rastreamento.
+
+    # --- Resposta de Health Check ---
+    HealthResponse:
+      type: object
+      properties:
+        overall_status:
+          type: string
+          enum: ["healthy", "unhealthy"]
+        components:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            database: "healthy"
+            ml_model: "healthy"
+        uptime:
+          type: number
+          description: "Tempo de atividade do serviço em segundos."
+        metadata:
+          $ref: '#/components/schemas/APIMetadata'
+          
+  responses:
+    BadRequest:
+      description: Requisição inválida, como dados de validação ausentes ou incorretos.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StandardErrorResponse'
+    NotFound:
+      description: O recurso solicitado não foi encontrado.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StandardErrorResponse'
+    InternalServerError:
+      description: Ocorreu um erro inesperado no servidor.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StandardErrorResponse'
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
