@@ -1,8 +1,3 @@
-output "api_base_url" {
-  description = "URL base da API para invocação"
-  value       = "https://${aws_api_gateway_rest_api.api.id}.execute-api.${data.aws_region.current.region}.amazonaws.com/${aws_api_gateway_stage.api_stage.stage_name}"
-}
-
 output "api_invoke_url" {
   description = "A URL de invocação para o stage da API."
   value       = aws_api_gateway_stage.api_stage.invoke_url
