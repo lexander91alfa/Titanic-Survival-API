@@ -1,90 +1,96 @@
-# build_layer.py
 import os
 import shutil
 import subprocess
 import sys
 import glob
 
-LAYER_BUILD_DIR = "../.build/lambda_layer"
-PYTHON_PACKAGE_DIR = os.path.join(LAYER_BUILD_DIR, "python") # Pasta que será compactada
-SITE_PACKAGES_DIR = os.path.join(PYTHON_PACKAGE_DIR, "lib/python3.12/site-packages")
-REQUIREMENTS_FILE = "../api/requirements.txt"
-MODEL_SOURCE = "../api/modelos/model.joblib"
-MODEL_DEST_DIR = os.path.join(PYTHON_PACKAGE_DIR, "modelos")
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
-def clean_and_create_dir():
-    """Limpa e recria o diretório de build."""
-    print(">>> Limpando o diretório de build anterior...", flush=True)
+LAYER_BUILD_DIR = os.path.join(PROJECT_ROOT, ".build", "lambda_layer")
+
+PYTHON_DIR = os.path.join(LAYER_BUILD_DIR, "python")
+
+REQUIREMENTS_FILE = os.path.join(PROJECT_ROOT, "api", "requirements.txt")
+MODEL_SOURCE_DIR = os.path.join(PROJECT_ROOT, "api", "modelos")
+
+MODEL_DEST_DIR = os.path.join(PYTHON_DIR, "modelos")
+
+
+def build_layer():
+    """
+    Executa o processo completo de build da Lambda Layer.
+    """
+    print("--- Iniciando o build da Lambda Layer ---", flush=True)
+
+    print(">>> 1/4: Limpando diretório de build anterior...", flush=True)
     if os.path.exists(LAYER_BUILD_DIR):
         shutil.rmtree(LAYER_BUILD_DIR)
-    os.makedirs(SITE_PACKAGES_DIR)
-    os.makedirs(MODEL_DEST_DIR)
+    os.makedirs(PYTHON_DIR) # Cria a pasta /python
+    os.makedirs(MODEL_DEST_DIR) # Cria a pasta /python/modelos
 
-def install_dependencies():
-    """Instala as dependências de produção na pasta de build."""
-    print(f">>> Instalando dependências de '{REQUIREMENTS_FILE}'...", flush=True)
-    command = [
-        sys.executable, "-m", "pip", "install",
-        "--platform", "manylinux2014_aarch64",
-        "--implementation", "cp",
-        "--python-version", "3.12",
-        "--only-binary=:all:",
-        "-r", REQUIREMENTS_FILE,
-        "-t", SITE_PACKAGES_DIR
-    ]
+    print(f">>> 2/4: Instalando dependências de '{REQUIREMENTS_FILE}'...", flush=True)
     try:
-        subprocess.run(command, check=True, capture_output=True, text=True)
-        print(">>> Instalação de dependências concluída.", flush=True)
+        subprocess.run([
+            sys.executable, "-m", "pip", "install",
+            "--platform", "manylinux2014_aarch64", # Para arquitetura arm64
+            "--implementation", "cp",
+            "--python-version", "3.12",
+            "--only-binary=:all:",
+            "-r", REQUIREMENTS_FILE,
+            "-t", PYTHON_DIR  # O alvo é a pasta 'python', não 'site-packages'
+        ], check=True, capture_output=True, text=True)
+        print(">>> Dependências instaladas com sucesso.", flush=True)
     except subprocess.CalledProcessError as e:
         print("--- ERRO: Falha ao instalar as dependências. ---", flush=True)
         print(e.stderr, flush=True)
         sys.exit(1)
 
-def copy_model():
-    """Copia o modelo treinado para a layer."""
-    print(f">>> Copiando modelo de '{MODEL_SOURCE}' para a layer...", flush=True)
-    if not os.path.exists(MODEL_SOURCE):
-        print(f"--- ERRO: Modelo não encontrado em '{MODEL_SOURCE}' ---", flush=True)
+    print(f">>> 3/4: Copiando todos os modelos de '{MODEL_SOURCE_DIR}'...", flush=True)
+    if not os.path.isdir(MODEL_SOURCE_DIR):
+        print(f"--- ERRO: Diretório de modelos não encontrado em '{MODEL_SOURCE_DIR}' ---", flush=True)
         sys.exit(1)
     
-    model_dest = os.path.join(MODEL_DEST_DIR, "model.joblib")
-    shutil.copy2(MODEL_SOURCE, model_dest)
-    print(">>> Modelo copiado com sucesso.", flush=True)
+    models_found = glob.glob(os.path.join(MODEL_SOURCE_DIR, '*'))
+    if not models_found:
+        print(f"--- AVISO: Nenhum modelo encontrado em '{MODEL_SOURCE_DIR}' ---", flush=True)
+    else:
+        for model_path in models_found:
+            if os.path.isfile(model_path):
+                print(f"    - Copiando {os.path.basename(model_path)}...", flush=True)
+                shutil.copy2(model_path, MODEL_DEST_DIR)
+        print(">>> Modelos copiados com sucesso.", flush=True)
 
-def slim_package():
-    """
-    Remove arquivos e pastas desnecessários para reduzir o tamanho do pacote.
-    """
-    print(">>> Otimizando o tamanho do pacote...", flush=True)
+
+    print(">>> 4/4: Otimizando o tamanho do pacote...", flush=True)
+    slim_package(PYTHON_DIR)
     
+    print("\n[SUCCESS] Build da camada concluído e otimizado com sucesso!", flush=True)
+
+
+def slim_package(directory):
+    """
+    Remove arquivos desnecessários para reduzir o tamanho da layer.
+    """
     patterns_to_remove = [
         "**/__pycache__",
         "**/*.pyc",
         "**/*.dist-info"
     ]
-
     print("--- Removendo arquivos de metadados e cache...", flush=True)
     for pattern in patterns_to_remove:
-        for path in glob.glob(os.path.join(SITE_PACKAGES_DIR, pattern), recursive=True):
+        for path in glob.glob(os.path.join(directory, pattern), recursive=True):
             if os.path.isdir(path):
                 shutil.rmtree(path)
             else:
                 os.remove(path)
-    
-    print("--- Otimizando arquivos binários (.so)..." , flush=True)
-    strip_command = f"find {SITE_PACKAGES_DIR} -name '*.so' -exec strip {{}} \\;"
+
+    print("--- Otimizando arquivos binários (.so)...", flush=True)
     try:
-        subprocess.run(strip_command, shell=True, check=True)
+        subprocess.run(f"find {directory} -name '*.so' -exec strip {{}} \\;", shell=True, check=True, capture_output=True)
         print(">>> Arquivos binários (.so) otimizados.", flush=True)
     except (subprocess.CalledProcessError, FileNotFoundError):
-        print("--- Aviso: Comando 'strip' não encontrado. Pulando a otimização de binários.")
-
-    print(">>> Otimização concluída.", flush=True)
+        print("--- Aviso: Comando 'strip' não encontrado ou falhou. Pulando otimização de binários.")
 
 
 if __name__ == "__main__":
-    clean_and_create_dir()
-    install_dependencies()
-    copy_model()
-    slim_package()
-    print("\n[SUCCESS] Build da camada concluído e otimizado com sucesso!", flush=True)
+    build_layer()

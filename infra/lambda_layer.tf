@@ -1,7 +1,8 @@
 resource "null_resource" "build_lambda_layer" {
   triggers = {
     requirements_hash = filemd5("../api/requirements.txt")
-    model_hash       = filemd5("../api/modelos/model.joblib")
+    model_joblib_hash       = filemd5("../api/modelos/model.joblib")
+    model_pkl_hash         = filemd5("../api/modelos/model.pkl")
   }
 
   provisioner "local-exec" {
