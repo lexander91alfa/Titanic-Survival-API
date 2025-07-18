@@ -7,7 +7,7 @@ resource "aws_apigatewayv2_api" "http_api" {
   description            = local.api_gateway.description
 
   cors_configuration {
-    allow_origins = ["*"]
+    allow_origins = ["https://lexander91alfa.github.io"]
     allow_methods = ["POST", "GET", "DELETE", "OPTIONS"]
     allow_headers = ["Content-Type", "Authorization", "X-API-Key"]
     max_age       = 300
@@ -57,7 +57,7 @@ resource "aws_apigatewayv2_route" "get_health" {
 
 resource "aws_apigatewayv2_stage" "api_stage" {
   api_id = aws_apigatewayv2_api.http_api.id
-  name   = "$default"
+  name   = "v1"
   auto_deploy = true
 
   access_log_settings {
@@ -110,4 +110,12 @@ resource "aws_api_gateway_api_key" "main_key" {
   name = "${local.project_name}-key"
   
   tags = local.tags
+}
+
+resource "aws_apigatewayv2_route" "api_routes" {
+  for_each  = toset(local.api_routes)
+
+  api_id    = aws_apigatewayv2_api.http_api.id
+  route_key = each.key
+  target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
 }
