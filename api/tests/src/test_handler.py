@@ -80,6 +80,7 @@ class TestLambdaHandler:
         test_event = {
             "httpMethod": "POST",
             "path": "/sobreviventes",
+            "headers": {"Content-Type": "application/json"},
             "body": json.dumps(
                 {
                     "PassengerId": "1",
@@ -97,7 +98,7 @@ class TestLambdaHandler:
         response = lambda_handler(test_event, None)
 
         assert response["statusCode"] == 201
-        body = response["body"]
+        body = json.loads(response["body"])
         assert body["success"] is True
         assert body["message"] == "Predição de sobrevivência realizada com sucesso"
         assert "data" in body
@@ -112,6 +113,7 @@ class TestLambdaHandler:
         test_event = {
             "httpMethod": "POST",
             "path": "/sobreviventes",
+            "headers": {"Content-Type": "application/json"},
             "body": json.dumps({"Pclass": 99, "Sex": "alien", "Age": -10}),
         }
 
@@ -120,9 +122,9 @@ class TestLambdaHandler:
 
         # Assert
         assert response["statusCode"] == 422
-        body = response["body"]
+        body = json.loads(response["body"])
         assert body["error"] is True
-        assert "Validation error" in body["message"]
+        assert "Erro de validação nos dados fornecidos" in body["message"]
 
     def test_handler_post_multiple_passengers(self, passenger_repository):
         """Testa POST com múltiplos passageiros."""
@@ -150,6 +152,7 @@ class TestLambdaHandler:
         test_event = {
             "httpMethod": "POST",
             "path": "/sobreviventes",
+            "headers": {"Content-Type": "application/json"},
             "body": json.dumps(
                 [
                     {
@@ -179,7 +182,7 @@ class TestLambdaHandler:
         response = lambda_handler(test_event, None)
 
         assert response["statusCode"] == 201
-        body = response["body"]
+        body = json.loads(response["body"])
         assert body["success"] is True
         assert body["message"] == "Predições de sobrevivência realizadas com sucesso"
         assert "data" in body
@@ -193,13 +196,13 @@ class TestLambdaHandler:
             "items": [
                 {
                     "passenger_id": "1",
-                    "survival_probability": Decimal("0.8"),
+                    "survival_probability": 0.8,
                     "prediction": "survived",
                     "confidence_level": "high",
                 },
                 {
                     "passenger_id": "2",
-                    "survival_probability": Decimal("0.3"),
+                    "survival_probability": 0.3,
                     "prediction": "not_survived",
                     "confidence_level": "medium",
                 },
@@ -218,23 +221,13 @@ class TestLambdaHandler:
         test_event = {
             "httpMethod": "GET",
             "path": "/sobreviventes",
+            "headers": {"Content-Type": "application/json"},
         }
 
         response = lambda_handler(test_event, None)
 
         assert response["statusCode"] == 200
-        body = response["body"]
-        assert body["success"] is True
-        assert body["message"] == "Lista de passageiros recuperada com sucesso"
-        assert "data" in body
-        assert "passengers" in body["data"]
-        assert "pagination" in body["data"]
-        assert len(body["data"]["passengers"]) == 2
-
-        response = lambda_handler(test_event, None)
-
-        assert response["statusCode"] == 200
-        body = response["body"]
+        body = json.loads(response["body"])
         assert body["success"] is True
         assert body["message"] == "Lista de passageiros recuperada com sucesso"
         assert "data" in body
@@ -247,7 +240,7 @@ class TestLambdaHandler:
         # Arrange
         mock_passenger = {
             "passenger_id": "123",
-            "survival_probability": Decimal("0.75"),
+            "survival_probability": 0.75,
             "prediction": "survived",
             "confidence_level": "medium",
             "created_at": "2025-07-17T10:00:00Z",
@@ -260,12 +253,13 @@ class TestLambdaHandler:
             "path": "/sobreviventes/123",
             "resource": "/sobreviventes/{id}",
             "pathParameters": {"id": "123"},
+            "headers": {"Content-Type": "application/json"},
         }
 
         response = lambda_handler(test_event, None)
 
         assert response["statusCode"] == 200
-        body = response["body"]
+        body = json.loads(response["body"])
         assert body["success"] is True
         assert body["message"] == "Dados do passageiro recuperados com sucesso"
         assert "data" in body
@@ -278,12 +272,13 @@ class TestLambdaHandler:
             "path": "/sobreviventes/",
             "resource": "/sobreviventes/{id}",
             "pathParameters": {},
+            "headers": {"Content-Type": "application/json"},
         }
 
         response = lambda_handler(test_event, None)
 
         assert response["statusCode"] == 400
-        body = response["body"]
+        body = json.loads(response["body"])
         assert body["error"] is True
         assert "ID do passageiro é obrigatório" in body["message"]
 
@@ -296,7 +291,6 @@ class TestLambdaHandler:
             deleted=True,
             passenger_id="456",
             message="Passageiro com ID 456 excluído com sucesso.",
-            deleted_at="2025-07-17T10:00:00Z",
         )
         self.mock_passenger_controller.delete_passenger.return_value = (
             mock_delete_response
@@ -306,12 +300,13 @@ class TestLambdaHandler:
             "httpMethod": "DELETE",
             "path": "/sobreviventes/456",
             "pathParameters": {"id": "456"},
+            "headers": {"Content-Type": "application/json"},
         }
 
         response = lambda_handler(test_event, None)
 
         assert response["statusCode"] == 200
-        body = response["body"]
+        body = json.loads(response["body"])
         assert body["success"] is True
         assert body["message"] == "Passageiro excluído com sucesso"
         assert "data" in body
@@ -324,6 +319,7 @@ class TestLambdaHandler:
             "httpMethod": "DELETE",
             "path": "/sobreviventes/",
             "pathParameters": {},
+            "headers": {"Content-Type": "application/json"},
         }
 
         response = lambda_handler(test_event, None)
@@ -336,12 +332,15 @@ class TestLambdaHandler:
         test_event = {
             "httpMethod": "GET",
             "path": "/health",
+            "headers": {"Content-Type": "application/json"},
         }
 
         mock_health_status = {
             "overall_status": "healthy",
-            "model": {"status": "healthy", "message": "Model is working"},
-            "database": {"status": "healthy", "message": "Database is working"},
+            "components": {
+                "model": {"status": "healthy", "message": "Model is working"},
+                "database": {"status": "healthy", "message": "Database is working"},
+            },
         }
 
         with patch("prediction_handler.HealthCheck") as mock_health:
@@ -355,7 +354,7 @@ class TestLambdaHandler:
 
             # Assert
             assert response["statusCode"] == 200
-            body = response["body"]
+            body = json.loads(response["body"])
             assert body["overall_status"] == "healthy"
             assert "components" in body
             assert "metadata" in body
@@ -367,27 +366,24 @@ class TestLambdaHandler:
         test_event = {
             "httpMethod": "GET",
             "path": "/health",
+            "headers": {"Content-Type": "application/json"},
         }
 
         with patch("prediction_handler.HealthCheck") as mock_health:
             mock_instance = MagicMock()
             mock_instance.get_overall_health.return_value = {
                 "overall_status": "unhealthy",
-                "model": {"status": "unhealthy", "message": "Model not working"},
-                "database": {"status": "healthy", "message": "Database is working"},
+                "components": {
+                    "model": {"status": "unhealthy", "message": "Model not working"},
+                    "database": {"status": "healthy", "message": "Database is working"},
+                },
             }
             mock_health.return_value = mock_instance
 
             response = lambda_handler(test_event, None)
 
             assert response["statusCode"] == 503
-            body = response["body"]
-            assert body["overall_status"] == "unhealthy"
-
-            response = lambda_handler(test_event, None)
-
-            assert response["statusCode"] == 503
-            body = response["body"]
+            body = json.loads(response["body"])
             assert body["overall_status"] == "unhealthy"
 
     def test_handler_internal_server_error(self, passenger_repository):
@@ -400,6 +396,7 @@ class TestLambdaHandler:
         test_event = {
             "httpMethod": "POST",
             "path": "/sobreviventes",
+            "headers": {"Content-Type": "application/json"},
             "body": json.dumps(
                 {
                     "PassengerId": "error_test",
@@ -417,7 +414,7 @@ class TestLambdaHandler:
         response = lambda_handler(test_event, None)
 
         assert response["statusCode"] == 500
-        body = response["body"]
+        body = json.loads(response["body"])
         assert body["error"] is True
         assert body["message"] == "Erro interno do servidor"
 
@@ -431,6 +428,7 @@ class TestLambdaHandler:
         test_event = {
             "httpMethod": "POST",
             "path": "/sobreviventes",
+            "headers": {"Content-Type": "application/json"},
             "body": json.dumps(
                 {
                     "PassengerId": "business_error_test",
@@ -448,6 +446,6 @@ class TestLambdaHandler:
         response = lambda_handler(test_event, None)
 
         assert response["statusCode"] == 400
-        body = response["body"]
+        body = json.loads(response["body"])
         assert body["error"] is True
         assert "Business rule violation" in body["message"]

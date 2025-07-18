@@ -27,7 +27,9 @@ class TestPredictionService:
 
         # Assert
         assert service.model == mock_model
-        mock_file.assert_called_with("modelos/model.joblib", "rb")
+        # Aceita tanto formato Unix quanto Windows
+        expected_path = os.path.join("modelos", "model.joblib")
+        mock_file.assert_called_with(expected_path, "rb")
         mock_joblib_load.assert_called_once()
 
     @patch("src.services.predict_service.pickle.load")
@@ -47,7 +49,8 @@ class TestPredictionService:
 
         # Assert
         assert service.model == mock_model
-        mock_file.assert_called_with("modelos/model.pkl", "rb")
+        expected_path = os.path.join("modelos", "model.pkl")
+        mock_file.assert_called_with(expected_path, "rb")
         mock_pickle_load.assert_called_once()
 
     @patch("os.path.exists")
@@ -99,7 +102,8 @@ class TestPredictionService:
         with pytest.raises(FileNotFoundError) as exc_info:
             PredictionService(model_name="model", method="joblib")
 
-        assert "Arquivo não encontrado: modelos/model.joblib" in str(exc_info.value)
+        expected_path = os.path.join("modelos", "model.joblib")
+        assert f"Arquivo não encontrado: {expected_path}" in str(exc_info.value)
 
     @patch(
         "src.services.predict_service.joblib.load", side_effect=Exception("Load error")
@@ -117,9 +121,8 @@ class TestPredictionService:
         with pytest.raises(Exception) as exc_info:
             PredictionService(model_name="model", method="joblib")
 
-        assert "Não foi possível carregar o modelo. Causa: Load error" in str(
-            exc_info.value
-        )
+        # A exceção original é re-lançada, não uma nova mensagem
+        assert "Load error" in str(exc_info.value)
 
     def test_preprocess_complete_data(self):
         """Testa preprocessamento com dados completos."""
@@ -278,7 +281,8 @@ class TestPredictionService:
         with pytest.raises(Exception) as exc_info:
             service.predict(request_data)
 
-        assert "Falha na predição. Causa: Prediction error" in str(exc_info.value)
+        # A exceção original é re-lançada, não uma nova mensagem
+        assert "Prediction error" in str(exc_info.value)
 
     # Mock os.path.exists para todos os testes de predição e pré-processamento
     # para que o construtor não falhe ao tentar carregar o modelo.

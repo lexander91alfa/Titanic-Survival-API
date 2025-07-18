@@ -26,7 +26,7 @@ def dynamodb_table():
     """Cria uma tabela DynamoDB mockada para os testes."""
     with mock_aws():
         dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
-        table_name = "titanic-survival-api-passengers"
+        table_name = os.environ.get("DYNAMODB_TABLE_NAME", "test-table")
         dynamodb.create_table(
             TableName=table_name,
             KeySchema=[{"AttributeName": "passenger_id", "KeyType": "HASH"}],

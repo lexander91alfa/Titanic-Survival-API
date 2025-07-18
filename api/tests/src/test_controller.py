@@ -87,51 +87,54 @@ def test_create_prediction_validation_error(passenger_controller):
     Testa o tratamento de erro de validação na criação de predições.
     """
     # Mock do serviço de predição para lançar ValueError
-    passenger_controller.prediction_service.predict = MagicMock(
-        side_effect=ValueError("Invalid data")
-    )
+    with patch.object(
+        passenger_controller.prediction_service, "predict", side_effect=ValueError("Invalid data")
+    ):
+        requests_data = [
+            PassengerRequest(
+                PassengerId="1",
+                Pclass=3,
+                Sex="male",
+                Age=22.0,
+                SibSp=1,
+                Parch=0,
+                Fare=7.25,
+                Embarked="S",
+            )
+        ]
 
-    requests_data = [
-        PassengerRequest(
-            PassengerId="1",
-            Pclass=3,
-            Sex="male",
-            Age=22.0,
-            SibSp=1,
-            Parch=0,
-            Fare=7.25,
-            Embarked="S",
-        )
-    ]
-
-    with pytest.raises(ValueError, match="Erro de validação: Invalid data"):
-        passenger_controller.save_passenger(requests_data)
+        with pytest.raises(ValueError, match="Erro de validação: Invalid data"):
+            passenger_controller.save_passenger(requests_data)
 
 
 def test_create_prediction_unexpected_error(passenger_controller):
     """
     Testa o tratamento de erro inesperado na criação de predições.
     """
-    # Mock do repositório para lançar Exception
-    passenger_controller.passenger_repository.save = MagicMock(
-        side_effect=Exception("Database error")
-    )
-
-    requests_data = [
-        PassengerRequest(
-            PassengerId="1",
-            Pclass=3,
-            Sex="male",
-            Age=22.0,
-            SibSp=1,
-            Parch=0,
-            Fare=7.25,
-            Embarked="S",
+    # Mock do serviço de predição para retornar um valor válido
+    with patch.object(
+        passenger_controller.prediction_service, "predict", return_value=0.75
+    ):
+        # Mock do repositório para lançar Exception
+        passenger_controller.passenger_repository.save = MagicMock(
+            side_effect=Exception("Database error")
         )
-    ]
 
-    with pytest.raises(Exception, match="Erro inesperado: Database error"):
-        passenger_controller.save_passenger(requests_data)
+        requests_data = [
+            PassengerRequest(
+                PassengerId="1",
+                Pclass=3,
+                Sex="male",
+                Age=22.0,
+                SibSp=1,
+                Parch=0,
+                Fare=7.25,
+                Embarked="S",
+            )
+        ]
+
+        with pytest.raises(Exception, match="Erro inesperado: Database error"):
+            passenger_controller.save_passenger(requests_data)
 
 
 def test_get_all_passengers_success(passenger_controller):
