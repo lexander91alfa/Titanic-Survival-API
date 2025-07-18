@@ -1,5 +1,5 @@
 resource "aws_s3_bucket" "lambda_artifacts" {
-    bucket = "${local.project_name}-lambda-artifacts-${local.account_id}-alfa"
+    bucket = "${local.project_name}-lambda-artifacts-${local.account_id}-prod-v1"
 
     force_destroy = true
     tags = local.tags

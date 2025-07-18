@@ -29,12 +29,4 @@ locals {
         Environment = local.environment
         Project     = local.project_name
     }
-
-    api_routes = [
-        "POST /sobreviventes",
-        "GET /sobreviventes",
-        "GET /sobreviventes/{id}",
-        "DELETE /sobreviventes/{id}",
-        "GET /health"
-    ]
 }

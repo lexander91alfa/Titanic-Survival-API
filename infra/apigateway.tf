@@ -1,121 +1,203 @@
 # ===================================================================
-#  Configuração do API Gateway (HTTP API v2)
+# API Gateway (REST API)
 # ===================================================================
-resource "aws_apigatewayv2_api" "http_api" {
-  name                   = local.api_gateway.name
-  protocol_type          = "HTTP"
-  description            = local.api_gateway.description
 
-  cors_configuration {
-    allow_origins = ["https://lexander91alfa.github.io"]
-    allow_methods = ["POST", "GET", "DELETE", "OPTIONS"]
-    allow_headers = ["Content-Type", "Authorization", "X-API-Key"]
-    max_age       = 300
-  }
-
-  tags = local.tags
+resource "aws_api_gateway_rest_api" "api" {
+  name        = local.project_name
+  description = "API para demonstrar autorização com API Key"
+  tags        = local.tags
 }
 
-resource "aws_apigatewayv2_integration" "lambda_integration" {
-  api_id           = aws_apigatewayv2_api.http_api.id
-  integration_type = "AWS_PROXY"
-  
-  integration_uri = aws_lambda_function.prediction.invoke_arn
+# ===================================================================
+# API routes
+# ===================================================================
 
-  payload_format_version = "2.0"
+resource "aws_api_gateway_resource" "sobreviventes" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  parent_id   = aws_api_gateway_rest_api.api.root_resource_id
+  path_part   = "/sobreviventes"
 }
 
-resource "aws_apigatewayv2_route" "post_sobreviventes" {
-  api_id    = aws_apigatewayv2_api.http_api.id
-  route_key = "POST /sobreviventes"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
+resource "aws_api_gateway_resource" "sobreviventes_id" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  parent_id   = aws_api_gateway_resource.sobreviventes.id
+  path_part   = "/{id}"
 }
 
-resource "aws_apigatewayv2_route" "get_all_sobreviventes" {
-  api_id    = aws_apigatewayv2_api.http_api.id
-  route_key = "GET /sobreviventes"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
+resource "aws_api_gateway_resource" "health" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  parent_id   = aws_api_gateway_rest_api.api.root_resource_id
+  path_part   = "/health"
 }
 
-resource "aws_apigatewayv2_route" "get_one_sobrevivente" {
-  api_id    = aws_apigatewayv2_api.http_api.id
-  route_key = "GET /sobreviventes/{id}"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
+# ===================================================================
+# API Methods
+# ===================================================================
+
+resource "aws_api_gateway_method" "sobreviventes" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.sobreviventes.id
+  http_method   = "POST"
+  authorization = "NONE"
+  api_key_required = true
 }
 
-resource "aws_apigatewayv2_route" "delete_sobrevivente" {
-  api_id    = aws_apigatewayv2_api.http_api.id
-  route_key = "DELETE /sobreviventes/{id}"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
+resource "aws_api_gateway_method" "sobreviventes_get" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.sobreviventes.id
+  http_method   = "POST"
+  authorization = "NONE"
+  api_key_required = true
 }
 
-resource "aws_apigatewayv2_route" "get_health" {
-  api_id    = aws_apigatewayv2_api.http_api.id
-  route_key = "GET /health"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
+resource "aws_api_gateway_method" "sobreviventes_id" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.sobreviventes_id.id
+  http_method   = "POST"
+  authorization = "NONE"
+  api_key_required = true
 }
 
-resource "aws_apigatewayv2_stage" "api_stage" {
-  api_id = aws_apigatewayv2_api.http_api.id
-  name   = "v1"
-  auto_deploy = true
+resource "aws_api_gateway_method" "health" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.health.id
+  http_method   = "POST"
+  authorization = "NONE"
+  api_key_required = true
+}
+resource "aws_api_gateway_method" "sobreviventes_id_delete" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.sobreviventes_id.id
+  http_method   = "POST"
+  authorization = "NONE"
+  api_key_required = true
+}
 
-  access_log_settings {
-    destination_arn = aws_cloudwatch_log_group.api_gateway_logs.arn
-    format = jsonencode({
-      requestId      = "$context.requestId"
-      ip             = "$context.identity.sourceIp"
-      requestTime    = "$context.requestTime"
-      httpMethod     = "$context.httpMethod"
-      routeKey       = "$context.routeKey"
-      status         = "$context.status"
-      protocol       = "$context.protocol"
-      responseLength = "$context.responseLength"
-      error          = "$context.error.message"
-      errorType      = "$context.error.messageString"
-    })
-  }
+# ===================================================================
+# API Integrations
+# ===================================================================
 
-  default_route_settings {
-    throttling_burst_limit = 5
-    throttling_rate_limit  = 10
-  }
+resource "aws_api_gateway_integration" "sobreviventes_post" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.sobreviventes.id
+  http_method = aws_api_gateway_method.sobreviventes.http_method
 
-  tags = local.tags
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.prediction.invoke_arn
+}
+resource "aws_api_gateway_integration" "sobreviventes_get" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.sobreviventes.id
+  http_method = aws_api_gateway_method.sobreviventes_get.http_method
 
+  integration_http_method = "GET"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.prediction.invoke_arn
+}
+
+resource "aws_api_gateway_integration" "sobreviventes_id_get" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.sobreviventes_id.id
+  http_method = aws_api_gateway_method.sobreviventes_id.http_method
+
+  integration_http_method = "GET"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.prediction.invoke_arn
+}
+
+resource "aws_api_gateway_integration" "health" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.health.id
+  http_method = aws_api_gateway_method.health.http_method
+
+  integration_http_method = "GET"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.prediction.invoke_arn
+}
+
+resource "aws_api_gateway_integration" "sobreviventes_id_delete" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.sobreviventes_id.id
+  http_method = aws_api_gateway_method.sobreviventes_id_delete.http_method
+
+  integration_http_method = "DELETE"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.prediction.invoke_arn
+}
+
+# ===================================================================
+# API Deployment and Stage
+# ===================================================================
+
+resource "aws_api_gateway_deployment" "api_deployment" {
   depends_on = [
-    aws_cloudwatch_log_group.api_gateway_logs
+    aws_api_gateway_integration.sobreviventes_post,
+    aws_api_gateway_integration.sobreviventes_get,
+    aws_api_gateway_integration.sobreviventes_id_get,
+    aws_api_gateway_integration.health,
+    aws_api_gateway_integration.sobreviventes_id_delete
   ]
-}
 
-resource "aws_lambda_permission" "api_gw_permission" {
-  statement_id  = "AllowAPIGatewayInvoke"
-  action        = "lambda:InvokeFunction"
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  description = "Deployment for v1 stage"
   
-  function_name = aws_lambda_function.prediction.function_name
-  
-  principal     = "apigateway.amazonaws.com"
-
-  source_arn = "${aws_apigatewayv2_api.http_api.execution_arn}/*/*"
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
-resource "aws_cloudwatch_log_group" "api_gateway_logs" {
-  name              = "/aws/apigateway/${local.project_name}"
-  retention_in_days = 1
-
-  tags = local.tags
+resource "aws_api_gateway_stage" "api_stage" {
+  deployment_id = aws_api_gateway_deployment.api_deployment.id
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  stage_name    = "v1"
+  tags          = local.tags
 }
+
+# ===================================================================
+# API Key e Usage Plan
+# ===================================================================
 
 resource "aws_api_gateway_api_key" "main_key" {
   name = "${local.project_name}-key"
-  
   tags = local.tags
 }
 
-resource "aws_apigatewayv2_route" "api_routes" {
-  for_each  = toset(local.api_routes)
+resource "aws_api_gateway_usage_plan" "main_plan" {
+  name = "${local.project_name}-plan"
+  
+  api_stages {
+    api_id = aws_api_gateway_rest_api.api.id
+    stage  = aws_api_gateway_stage.api_stage.stage_name
+  }
+  
+  quota_settings {
+    limit  = 100
+    period = "DAY"
+  }
+  
+  throttle_settings {
+    rate_limit  = 5
+    burst_limit = 10
+  }
+  tags = local.tags
+}
 
-  api_id    = aws_apigatewayv2_api.http_api.id
-  route_key = each.key
-  target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
+resource "aws_api_gateway_usage_plan_key" "main_plan_key" {
+  key_id        = aws_api_gateway_api_key.main_key.id
+  key_type      = "API_KEY"
+  usage_plan_id = aws_api_gateway_usage_plan.main_plan.id
+}
+
+# ===================================================================
+# Permissões e Saídas
+# ===================================================================
+
+resource "aws_lambda_permission" "api_gateway_permission" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.prediction.function_name
+  principal     = "apigateway.amazonaws.com"
+
+  source_arn = "${aws_api_gateway_rest_api.api.execution_arn}/*/*"
 }
